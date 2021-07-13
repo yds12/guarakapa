@@ -4,7 +4,7 @@ A password manager for the terminal written in Rust.
 
 Main goal is simplicity:
 
-* other alternatives like 
+* other alternatives like
 [rooster](https://github.com/conradkleinespel/rooster) are above 4k lines of
 code, we want to stay well below that;
 * just the basic features: ability to add and retrieve passwords.
@@ -18,14 +18,6 @@ and other info as fields;
 * Retrieve entry (user types the app/website name, a search is performed and
 results shown, password is stored in the clipboard);
 * Password typing should use shadowing (`*****`).
-
-Implementation ideas:
-
-Never decrypt things that are not needed. Decrypted information should be
-deleted (from memory, i.e., go out of scope) as soon possible -- right after
-use. All entry names/descriptions (or searchable fields) should be stored 
-together and decrypted at once for searchability. Once the search is done and
-entry is selected, only the desired entry is decrypted.
 
 Experience should be more or less like the following. Retrieving a password:
 
@@ -60,4 +52,19 @@ The user can just press ENTER upon a prompt to leave a field blank.
 
 Backups can be done by copying the password file. We might implement an export
 function to export everything unencrypted to a JSON, TOML or YAML file.
+
+# Implementation ideas
+
+Never decrypt things that are not needed. Decrypted information should be
+deleted (from memory, i.e., go out of scope) as soon possible -- right after
+use. All entry names/descriptions (or searchable fields) should be stored
+together and decrypted at once for searchability. Once the search is done and
+entry is selected, only the desired entry is decrypted.
+
+## Cryptography
+
+We will use AES-256 in CBC mode for encryption. An initialization vector (IV) is
+randomly generated and stored with each message/entry. For the moment, we have
+no plans to use MAC or anything for authentication -- i.e. you will not be able
+to tell if the data is tampered with.
 
