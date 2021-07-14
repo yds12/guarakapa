@@ -1,11 +1,21 @@
-fn encrypt(content: &[u8], iv: &[u8], password: &[u8]) -> Vec<u8> {
-  openssl::symm::encrypt(openssl::symm::Cipher::aes_256_cbc(), password,
+/// Encrypt a message using a key and an initialization vector
+pub fn encrypt(content: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
+  openssl::symm::encrypt(openssl::symm::Cipher::aes_256_cbc(), key,
     Some(iv), content).unwrap()
 }
 
-fn decrypt(secret: &[u8], iv: &[u8], password: &[u8]) -> Vec<u8> {
-  openssl::symm::decrypt(openssl::symm::Cipher::aes_256_cbc(), password,
+/// Decrypt a message using the key and initialization vector that were
+/// used to encrypt it.
+pub fn decrypt(secret: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
+  openssl::symm::decrypt(openssl::symm::Cipher::aes_256_cbc(), key,
     Some(iv), secret).unwrap()
+}
+
+/// Derives a 256-bit key from a password string
+pub fn derive_key(password: String) -> [u8; 32] {
+  let mut hasher = openssl::sha::Sha256::new();
+  hasher.update(password.as_bytes());
+  hasher.finish()
 }
 
 #[cfg(test)]
@@ -15,10 +25,10 @@ mod tests {
   #[test]
   fn encrypting_and_decrypting_should_retrieve_content() {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
-    let pw = &[0u8; 32][..]; // has to be 32 bytes
+    let pw = derive_key("very strong secret!".to_string());
     let iv = &[0u8; 16][..]; // has to be 16 bytes
-    let encrypted = encrypt(content.as_bytes(), iv, pw);
-    let decrypted = decrypt(encrypted.as_slice(), iv, pw);
+    let encrypted = encrypt(content.as_bytes(), iv, &pw[..]);
+    let decrypted = decrypt(encrypted.as_slice(), iv, &pw[..]);
 
     assert_eq!(content.as_bytes(), decrypted.as_slice());
   }
@@ -26,9 +36,9 @@ mod tests {
   #[test]
   fn encrypting_should_yield_something_different() {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
-    let pw = &[0u8; 32][..]; // has to be 32 bytes
+    let pw = derive_key("very strong secret!".to_string());
     let iv = &[0u8; 16][..]; // has to be 16 bytes
-    let encrypted = encrypt(content.as_bytes(), iv, pw);
+    let encrypted = encrypt(content.as_bytes(), iv, &pw[..]);
 
     assert!(content.as_bytes() != encrypted.as_slice());
   }
