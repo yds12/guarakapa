@@ -1,4 +1,4 @@
-** This is a work in progress. Please do not trust it with your passwords. **
+**This is a work in progress. Please do not trust it with your passwords.**
 
 A password manager for the terminal written in Rust.
 
