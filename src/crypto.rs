@@ -21,13 +21,13 @@ pub fn derive_key(password: String, salt: &[u8]) -> [u8; 32] {
   hasher.finish()
 }
 
-/// Generates an initialization vector.
-pub fn generate_iv() -> Vec<u8> {
-  let mut iv = [0u8; 16];
+/// Generates a random sequence of bytes
+pub fn generate_bytes(n: usize) -> Vec<u8> {
+  let mut bytes = vec![0; n];
 
   // this RNG is supposed to be cryptographically secure
-  rand::thread_rng().fill_bytes(&mut iv[..]);
-  iv.into()
+  rand::thread_rng().fill_bytes(&mut bytes[..]);
+  bytes.into()
 }
 
 #[cfg(test)]
@@ -37,37 +37,31 @@ mod tests {
   #[test]
   fn encrypting_and_decrypting_should_retrieve_content() {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
-    let salt = [0u8];
+    let salt = generate_bytes(16);
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
-    let iv = &[0u8; 16][..]; // has to be 16 bytes
-    let encrypted = encrypt(content.as_bytes(), iv, &pw[..]);
-    let decrypted = decrypt(encrypted.as_slice(), iv, &pw[..]);
+    let iv = generate_bytes(16);
 
+    let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]);
+    let decrypted = decrypt(encrypted.as_slice(), &iv[..], &pw[..]);
     assert_eq!(content.as_bytes(), decrypted.as_slice());
   }
 
   #[test]
   fn encrypting_should_yield_something_different() {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
-    let salt = [0u8];
+    let salt = generate_bytes(16);
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
-    let iv = &[0u8; 16][..]; // has to be 16 bytes
-    let encrypted = encrypt(content.as_bytes(), iv, &pw[..]);
+    let iv = generate_bytes(16);
 
+    let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]);
     assert!(content.as_bytes() != encrypted.as_slice());
   }
 
   #[test]
-  fn generated_ivs_are_different() {
-    let mut iv_set_1 = Vec::new();
-    let mut iv_set_2 = Vec::new();
-
-    for _ in 0..20 {
-      iv_set_1.push(generate_iv());
-      iv_set_2.push(generate_iv());
-    }
-
-    assert!(iv_set_1 != iv_set_2);
+  fn generated_bytes_are_different() {
+    let bytes1 = generate_bytes(1024);
+    let bytes2 = generate_bytes(1024);
+    assert!(bytes1 != bytes2);
   }
 }
 
