@@ -1,5 +1,6 @@
 use scanpw::scanpw;
 mod crypto;
+mod fman;
 
 fn main() {
   let has_pw = false;
