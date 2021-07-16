@@ -3,9 +3,9 @@ name = "password-manager"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 openssl = "0.10"
 rand = "0.8"
 scanpw = "0.1"
+serde = { version = "1", features = ["derive"] }
+bincode = "1.3"
