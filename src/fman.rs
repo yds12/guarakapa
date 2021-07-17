@@ -2,8 +2,8 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
-  pw_hash: [u8; 32],
-  salt: [u8; 16]
+  pub pw_hash: [u8; 32],
+  pub salt: [u8; 16]
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -21,7 +21,7 @@ pub struct Entry {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct File {
-  head: Head,
+  pub head: Head,
   metadata: Metadata,
   entries: Vec<Entry>
 }
@@ -42,11 +42,11 @@ impl File {
   }
 }
 
-fn encode(file: &File) -> Vec<u8> {
+pub fn encode(file: &File) -> Vec<u8> {
   bincode::serialize(file).unwrap()
 }
 
-fn decode(content: &[u8]) -> File {
+pub fn decode(content: &[u8]) -> File {
   bincode::deserialize(&content).unwrap()
 }
 
