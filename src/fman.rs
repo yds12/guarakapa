@@ -1,10 +1,15 @@
 use serde::{Serialize, Deserialize};
-use std::io::{Write, Read};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
   pw_hash: [u8; 32],
   salt: [u8; 16]
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct Metadata {
+  size: u16,
+  content: Vec<u8>
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -17,29 +22,39 @@ pub struct Entry {
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct File {
   head: Head,
+  metadata: Metadata,
   entries: Vec<Entry>
 }
 
-pub fn save(file: File) {
-  let encoded = bincode::serialize(&file).unwrap();
-
-  let mut file_handle = std::fs::File::create("testfile.dat").unwrap();
-  match file_handle.write_all(encoded.as_slice()) {
-    _ => ()
-  };
+impl File {
+  pub fn new(pw_hash: [u8; 32], salt: [u8; 16]) -> Self {
+    File {
+      head: Head {
+        pw_hash,
+        salt
+      },
+      metadata: Metadata {
+        size: 0,
+        content: Vec::new()
+      },
+      entries: Vec::new()
+    }
+  }
 }
 
-pub fn load() -> File {
-  let contents = std::fs::read("testfile.dat").unwrap();
-  bincode::deserialize(&contents).unwrap()
+fn encode(file: &File) -> Vec<u8> {
+  bincode::serialize(file).unwrap()
+}
+
+fn decode(content: &[u8]) -> File {
+  bincode::deserialize(&content).unwrap()
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
 
-  #[test]
-  fn can_save_file() {
+  fn get_file() -> File {
     let head = Head {
       pw_hash: [1; 32],
       salt: [2; 16]
@@ -57,19 +72,29 @@ mod tests {
       content: vec![9, 8, 7, 6, 5, 4, 3]
     };
 
-    let file = File {
+    File {
       head,
+      metadata: Metadata {
+        size: 0,
+        content: Vec::new()
+      },
       entries: vec![entry, entry2]
-    };
-
-    save(file);
+    }
   }
 
   #[test]
-  fn can_read_file() {
-    let result = load();
-    println!("result: {:?}", result);
-    panic!();
+  fn can_encode() {
+    let file = get_file();
+    encode(&file);
+  }
+
+  #[test]
+  fn can_decode() {
+    let file = get_file();
+    let encoded = encode(&file);
+    let decoded = decode(encoded.as_slice());
+
+    assert_eq!(file, decoded);
   }
 }
 

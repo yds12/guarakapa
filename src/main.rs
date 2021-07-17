@@ -1,6 +1,8 @@
+use std::convert::TryInto;
 use scanpw::scanpw;
 mod crypto;
 mod fman;
+mod fs;
 
 fn main() {
   let has_pw = false;
@@ -15,6 +17,11 @@ fn main() {
       println!("Password confirmation incorrect!");
     } else {
       println!("Password saved!");
+
+      let salt = crypto::generate_bytes(16);
+      let pw_hash = crypto::hash(vec![pw.as_bytes(), salt.as_slice()]);
+
+      let file = fman::File::new(pw_hash, salt.try_into().unwrap());
     }
   }
 }

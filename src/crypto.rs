@@ -15,9 +15,15 @@ pub fn decrypt(secret: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
 
 /// Derives a 256-bit key from a password string and a salt value.
 pub fn derive_key(password: String, salt: &[u8]) -> [u8; 32] {
+  hash(vec![password.as_bytes(), salt])
+}
+
+pub fn hash(content: Vec<&[u8]>) -> [u8; 32] {
   let mut hasher = openssl::sha::Sha256::new();
-  hasher.update(password.as_bytes());
-  hasher.update(salt);
+
+  for bytes in content {
+    hasher.update(bytes);
+  }
   hasher.finish()
 }
 
