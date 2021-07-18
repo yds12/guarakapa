@@ -102,6 +102,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "guarakapa"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "openssl",
+ "rand",
+ "scanpw",
+ "serde",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,17 +241,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "winapi",
-]
-
-[[package]]
-name = "password-manager"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "openssl",
- "rand",
- "scanpw",
- "serde",
 ]
 
 [[package]]
