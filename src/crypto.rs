@@ -1,18 +1,21 @@
+use anyhow::Result;
 use rand::prelude::*;
 
 pub const IV_LEN: usize = 16;
 
 /// Encrypt a message using a key and an initialization vector
-pub fn encrypt(content: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
-  openssl::symm::encrypt(openssl::symm::Cipher::aes_256_cbc(), key,
-    Some(iv), content).unwrap()
+pub fn encrypt(content: &[u8], iv: &[u8], key: &[u8]) -> Result<Vec<u8>> {
+  let encrypted = openssl::symm::encrypt(
+    openssl::symm::Cipher::aes_256_cbc(), key, Some(iv), content)?;
+  Ok(encrypted)
 }
 
 /// Decrypt a message using the key and initialization vector that were
 /// used to encrypt it.
-pub fn decrypt(secret: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
-  openssl::symm::decrypt(openssl::symm::Cipher::aes_256_cbc(), key,
-    Some(iv), secret).unwrap()
+pub fn decrypt(secret: &[u8], iv: &[u8], key: &[u8]) -> Result<Vec<u8>> {
+  let decrypted = openssl::symm::decrypt(
+    openssl::symm::Cipher::aes_256_cbc(), key, Some(iv), secret)?;
+  Ok(decrypted)
 }
 
 /// Derives a 256-bit key from a password string and a salt value.
@@ -49,8 +52,8 @@ mod tests {
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
     let iv = generate_bytes(IV_LEN);
 
-    let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]);
-    let decrypted = decrypt(encrypted.as_slice(), &iv[..], &pw[..]);
+    let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]).unwrap();
+    let decrypted = decrypt(encrypted.as_slice(), &iv[..], &pw[..]).unwrap();
     assert_eq!(content.as_bytes(), decrypted.as_slice());
   }
 
@@ -61,7 +64,7 @@ mod tests {
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
     let iv = generate_bytes(IV_LEN);
 
-    let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]);
+    let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]).unwrap();
     assert!(content.as_bytes() != encrypted.as_slice());
   }
 

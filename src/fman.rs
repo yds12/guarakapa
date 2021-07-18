@@ -51,7 +51,7 @@ impl File {
       },
       metadata: Metadata {
         iv: iv.try_into().unwrap(),
-        content: encrypted_content
+        content: encrypted_content.unwrap()
       },
       entries: Vec::new()
     }
@@ -80,7 +80,7 @@ impl File {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
     let content = bincode::serialize(&entry).unwrap();
     let encrypted_content = crypto::encrypt(
-      content.as_slice(), iv.as_slice(), &key[..]);
+      content.as_slice(), iv.as_slice(), &key[..]).unwrap();
 
     let new_entry = Entry {
       iv: iv.try_into().unwrap(),
@@ -89,23 +89,23 @@ impl File {
 
     self.entries.push(new_entry);
 
-    let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+    let metadata = crypto::decrypt(self.metadata.content.as_slice(),
+      &self.metadata.iv[..], &key[..]).unwrap();
     let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
     meta_content.push(name);
 
     let meta_content = bincode::serialize(&meta_content).unwrap();
     let iv = crypto::generate_bytes(crypto::IV_LEN);
     let encrypted_content = crypto::encrypt(
-      meta_content.as_slice(), iv.as_slice(), &key[..]);
+      meta_content.as_slice(), iv.as_slice(), &key[..]).unwrap();
     self.metadata.content = encrypted_content;
     self.metadata.iv = iv.try_into().unwrap();
   }
 
   pub fn remove_entry(&mut self, masterpw: String, name: &str) {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
-    let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+    let metadata = crypto::decrypt(self.metadata.content.as_slice(),
+      &self.metadata.iv[..], &key[..]).unwrap();
     let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
 
     let mut index = None;
@@ -123,8 +123,8 @@ impl File {
 
         let meta_content = bincode::serialize(&meta_content).unwrap();
         let iv = crypto::generate_bytes(crypto::IV_LEN);
-        let encrypted_content = crypto::encrypt(
-          meta_content.as_slice(), iv.as_slice(), &key[..]);
+        let encrypted_content = crypto::encrypt(meta_content.as_slice(),
+          iv.as_slice(), &key[..]).unwrap();
         self.metadata.content = encrypted_content;
         self.metadata.iv = iv.try_into().unwrap();
       },
@@ -135,7 +135,7 @@ impl File {
   pub fn get_entry(&mut self, masterpw: String, name: &str) -> Option<OpenEntry> {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
     let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]).unwrap();
     let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
 
     for (index, meta_entry) in meta_content.iter().enumerate() {
@@ -143,7 +143,7 @@ impl File {
         let entry = &self.entries[index];
 
         let entry_bytes = crypto::decrypt(
-          entry.content.as_slice(), &entry.iv[..], &key[..]);
+          entry.content.as_slice(), &entry.iv[..], &key[..]).unwrap();
         let open_entry: OpenEntry = bincode::deserialize(entry_bytes.as_slice()).unwrap();
 
         return Some(open_entry);
@@ -156,7 +156,7 @@ impl File {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
 
     let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]).unwrap();
     let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
     return meta_content;
   }
