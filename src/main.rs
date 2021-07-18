@@ -1,3 +1,4 @@
+use std::env;
 use scanpw::scanpw;
 
 mod crypto;
@@ -21,7 +22,19 @@ fn create_new_file() {
   }
 }
 
+fn print_usage(exec_name: &str) {
+  println!("First time usage:\n\n\t{exec}\n\n\
+           General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
+           Commands:\n\n\
+           \tadd entry_name\tadds a new entry with name `entry_name`\n\
+           \trm entry_name\tremoves the entry with name `entry_name`\n\
+           \tlist\t\tlists all entries",
+           exec = exec_name);
+}
+
 fn main() {
+  let args: Vec<String> = env::args().collect();
+
   if fs::file_exists() {
     let contents = fs::load();
     let mut file = fman::decode(contents.as_slice());
@@ -57,7 +70,11 @@ fn main() {
     let entries = file.list(pw);
     println!("Total entries: {:?}", entries);
   } else {
-    create_new_file();
+    if args.len() > 1 {
+      print_usage(&args[0]);
+    } else {
+      create_new_file();
+    }
   }
 }
 
