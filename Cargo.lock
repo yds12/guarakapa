@@ -328,9 +328,8 @@ checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "scanpw"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80f65c5c067e5eb335001a5f5f659fa3c0f75f3b90e1ccdd697570d9027242c5"
+version = "0.1.1"
+source = "git+https://github.com/yds12/scanpw#49d10e13ee90a143723dd8864a813e2cdcea6d9d"
 dependencies = [
  "cfg-if 0.1.10",
  "crossterm",
