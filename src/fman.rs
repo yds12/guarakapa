@@ -104,18 +104,14 @@ impl File {
     self.metadata.iv = iv.try_into().unwrap();
   }
 
-  pub fn get_entry(&mut self, masterpw: String, name: String) -> Option<OpenEntry> {
-    // find entry index
-    //   - decrypt metadata
-    //   - loop with enumerate and check which one contains entry name
-    // decrypt entry with given index
+  pub fn get_entry(&mut self, masterpw: String, name: &str) -> Option<OpenEntry> {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
     let metadata = crypto::decrypt(
       self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
     let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
 
     for (index, meta_entry) in meta_content.iter().enumerate() {
-      if meta_entry.contains(&name) {
+      if meta_entry == name {
         let entry = &self.entries[index];
 
         let entry_bytes = crypto::decrypt(
