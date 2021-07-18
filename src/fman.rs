@@ -10,7 +10,6 @@ pub struct Head {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Metadata {
-  size: u16,
   iv: [u8; 16],
   content: Vec<u8>
 }
@@ -51,7 +50,6 @@ impl File {
         salt: salt.try_into().unwrap()
       },
       metadata: Metadata {
-        size: 0,
         iv: iv.try_into().unwrap(),
         content: encrypted_content
       },
@@ -102,6 +100,36 @@ impl File {
       meta_content.as_slice(), iv.as_slice(), &key[..]);
     self.metadata.content = encrypted_content;
     self.metadata.iv = iv.try_into().unwrap();
+  }
+
+  pub fn remove_entry(&mut self, masterpw: String, name: &str) {
+    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+    let metadata = crypto::decrypt(
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+    let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+
+    let mut index = None;
+    for (i, meta_entry) in meta_content.iter().enumerate() {
+      if meta_entry == name {
+        index = Some(i);
+        break;
+      }
+    }
+
+    match index {
+      Some(i) => {
+        self.entries.remove(i);
+        meta_content.remove(i);
+
+        let meta_content = bincode::serialize(&meta_content).unwrap();
+        let iv = crypto::generate_bytes(crypto::IV_LEN);
+        let encrypted_content = crypto::encrypt(
+          meta_content.as_slice(), iv.as_slice(), &key[..]);
+        self.metadata.content = encrypted_content;
+        self.metadata.iv = iv.try_into().unwrap();
+      },
+      _ => ()
+    }
   }
 
   pub fn get_entry(&mut self, masterpw: String, name: &str) -> Option<OpenEntry> {
@@ -157,7 +185,6 @@ mod tests {
     File {
       head,
       metadata: Metadata {
-        size: 0,
         iv: [0; 16],
         content: Vec::new()
       },

@@ -69,6 +69,21 @@ fn get_entry(entry_name: &str) {
 }
 
 fn remove_entry(entry_name: &str) {
+  let contents = fs::load();
+  let mut file = fman::decode(contents.as_slice());
+
+  let pw = scanpw!(None, "Enter your master password: ");
+  println!("");
+
+  let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
+
+  if pw_hash != file.head.pw_hash {
+    println!("Password does not match!");
+    return;
+  }
+
+  file.remove_entry(pw, entry_name);
+  fs::save(fman::encode(&file));
 }
 
 fn list_entries() {
