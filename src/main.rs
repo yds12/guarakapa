@@ -5,6 +5,10 @@ mod crypto;
 mod fman;
 mod fs;
 
+const MSG_ENTER_PW: &str = "Enter your master password: ";
+const MSG_FAILED_SAVE: &str = "Failed to save file";
+const MSG_WRONG_PW: &str = "Password does not match!";
+
 fn create_new_file() {
   let pw = scanpw!(None, "Enter a new master password: ");
   println!("");
@@ -15,7 +19,7 @@ fn create_new_file() {
     println!("Password confirmation incorrect!");
   } else {
     let file = fman::File::new(pw);
-    fs::save(fman::encode(&file)).expect("Failed to save file");
+    fs::save(fman::encode(&file)).expect(MSG_FAILED_SAVE);
 
     println!("Your password file was created. \
              Run the program again to add new entries.");
@@ -37,13 +41,13 @@ fn add_entry(entry_name: &str) {
   let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
-  let pw = scanpw!(None, "Enter your master password: ");
+  let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
 
   if pw_hash != file.head.pw_hash {
-    println!("Password does not match!");
+    println!("{}", MSG_WRONG_PW);
     return;
   }
 
@@ -51,14 +55,14 @@ fn add_entry(entry_name: &str) {
   println!("");
 
   file.add_entry(pw, entry_name.to_string(), entry_pw);
-  fs::save(fman::encode(&file)).expect("Failed to save file");
+  fs::save(fman::encode(&file)).expect(MSG_FAILED_SAVE);
 }
 
 fn get_entry(entry_name: &str) {
   let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
-  let pw = scanpw!(None, "Enter your master password: ");
+  let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
 
   if let Some(entry) = file.get_entry(pw, entry_name) {
@@ -72,25 +76,25 @@ fn remove_entry(entry_name: &str) {
   let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
-  let pw = scanpw!(None, "Enter your master password: ");
+  let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
 
   if pw_hash != file.head.pw_hash {
-    println!("Password does not match!");
+    println!("{}", MSG_WRONG_PW);
     return;
   }
 
   file.remove_entry(pw, entry_name);
-  fs::save(fman::encode(&file)).expect("Failed to save file");
+  fs::save(fman::encode(&file)).expect(MSG_FAILED_SAVE);
 }
 
 fn list_entries() {
   let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
-  let pw = scanpw!(None, "Enter your master password: ");
+  let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
 
   let entries = file.list(pw);
