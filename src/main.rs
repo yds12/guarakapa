@@ -1,11 +1,10 @@
-use std::convert::TryInto;
 use scanpw::scanpw;
 
 mod crypto;
 mod fman;
 mod fs;
 
-fn create_new_file() -> Option<fman::File> {
+fn create_new_file() {
   let pw = scanpw!(None, "Enter a new master password: ");
   println!("");
   let confirm = scanpw!(None, "Please repeat: ");
@@ -13,24 +12,19 @@ fn create_new_file() -> Option<fman::File> {
 
   if pw != confirm {
     println!("Password confirmation incorrect!");
-    return None;
   } else {
-    let salt = crypto::generate_bytes(16);
-    let pw_hash = crypto::hash(vec![pw.as_bytes(), salt.as_slice()]);
-    let file = fman::File::new(pw_hash, salt.try_into().unwrap());
+    let file = fman::File::new(pw);
     fs::save(fman::encode(&file));
 
-    println!("Password saved!");
-    return Some(file);
+    println!("Your password file was created. \
+             Run the program again to add new entries.");
   }
 }
 
 fn main() {
-  let mut file: fman::File;
-
   if fs::file_exists() {
     let contents = fs::load();
-    file = fman::decode(contents.as_slice());
+    let mut file = fman::decode(contents.as_slice());
 
     let pw = scanpw!(None, "Enter your master password: ");
     println!("");
@@ -41,14 +35,29 @@ fn main() {
       println!("Password does not match!");
       return;
     }
-  } else {
-    if let Some(f) = create_new_file() {
-      file = f;
-    } else {
-      return;
-    }
-  }
 
-  println!("Welcome to Guarakapá, your password manager!");
+    let entryname = String::from("entry");
+    file.add_entry(pw, entryname.clone(),
+      String::from("a VERY strong password"));
+
+    fs::save(fman::encode(&file));
+
+    let pw = scanpw!(None, "Enter your master password: ");
+    println!("");
+
+    if let Some(entry) = file.get_entry(pw, entryname) {
+      println!("Entry recovered: {:?}", entry);
+    } else {
+      println!("Entry could not be recovered.");
+    }
+
+    let pw = scanpw!(None, "Enter your master password: ");
+    println!("");
+
+    let entries = file.list(pw);
+    println!("Total entries: {:?}", entries);
+  } else {
+    create_new_file();
+  }
 }
 

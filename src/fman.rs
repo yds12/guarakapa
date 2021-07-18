@@ -1,4 +1,6 @@
 use serde::{Serialize, Deserialize};
+use std::convert::TryInto;
+use crate::crypto;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
@@ -9,12 +11,12 @@ pub struct Head {
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Metadata {
   size: u16,
+  iv: [u8; 16],
   content: Vec<u8>
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Entry {
-  size: u16,
   iv: [u8; 16],
   content: Vec<u8>
 }
@@ -26,16 +28,32 @@ pub struct File {
   entries: Vec<Entry>
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct OpenEntry {
+  pw: String
+}
+
 impl File {
-  pub fn new(pw_hash: [u8; 32], salt: [u8; 16]) -> Self {
+  pub fn new(pw: String) -> Self {
+    let salt = crypto::generate_bytes(16);
+    let pw_hash = crypto::hash(vec![pw.as_bytes(), salt.as_slice()]);
+    let iv = crypto::generate_bytes(crypto::IV_LEN);
+    let key = crypto::derive_key(pw, salt.as_slice());
+
+    let meta_content = Vec::<u8>::new();
+    let content = bincode::serialize(&meta_content).unwrap();
+    let encrypted_content = crypto::encrypt(
+      content.as_slice(), iv.as_slice(), &key[..]);
+
     File {
       head: Head {
         pw_hash,
-        salt
+        salt: salt.try_into().unwrap()
       },
       metadata: Metadata {
         size: 0,
-        content: Vec::new()
+        iv: iv.try_into().unwrap(),
+        content: encrypted_content
       },
       entries: Vec::new()
     }
@@ -50,6 +68,76 @@ pub fn decode(content: &[u8]) -> File {
   bincode::deserialize(&content).unwrap()
 }
 
+impl File {
+  /// Adds a new entry to the in-memory file. Arguments:
+  /// * `masterpw`: the user master password as a clear-text string
+  /// * `name`: the name of the entry
+  /// * `password`: the password to be stored for the new entry
+  pub fn add_entry(&mut self, masterpw: String, name: String, password: String) {
+    let iv = crypto::generate_bytes(crypto::IV_LEN);
+    let entry = OpenEntry {
+      pw: password
+    };
+
+    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+    let content = bincode::serialize(&entry).unwrap();
+    let encrypted_content = crypto::encrypt(
+      content.as_slice(), iv.as_slice(), &key[..]);
+
+    let new_entry = Entry {
+      iv: iv.try_into().unwrap(),
+      content: encrypted_content
+    };
+
+    self.entries.push(new_entry);
+
+    let metadata = crypto::decrypt(
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+    let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+    meta_content.push(name);
+
+    let meta_content = bincode::serialize(&meta_content).unwrap();
+    let iv = crypto::generate_bytes(crypto::IV_LEN);
+    let encrypted_content = crypto::encrypt(
+      meta_content.as_slice(), iv.as_slice(), &key[..]);
+    self.metadata.content = encrypted_content;
+    self.metadata.iv = iv.try_into().unwrap();
+  }
+
+  pub fn get_entry(&mut self, masterpw: String, name: String) -> Option<OpenEntry> {
+    // find entry index
+    //   - decrypt metadata
+    //   - loop with enumerate and check which one contains entry name
+    // decrypt entry with given index
+    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+    let metadata = crypto::decrypt(
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+    let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+
+    for (index, meta_entry) in meta_content.iter().enumerate() {
+      if meta_entry.contains(&name) {
+        let entry = &self.entries[index];
+
+        let entry_bytes = crypto::decrypt(
+          entry.content.as_slice(), &entry.iv[..], &key[..]);
+        let open_entry: OpenEntry = bincode::deserialize(entry_bytes.as_slice()).unwrap();
+
+        return Some(open_entry);
+      }
+    }
+    None
+  }
+
+  pub fn list(&mut self, masterpw: String) -> Vec<String> {
+    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+
+    let metadata = crypto::decrypt(
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]);
+    let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+    return meta_content;
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -61,13 +149,11 @@ mod tests {
     };
 
     let entry = Entry {
-      size: 5,
       iv: [3; 16],
       content: vec![1, 2, 3, 4, 5]
     };
 
     let entry2 = Entry {
-      size: 7,
       iv: [4; 16],
       content: vec![9, 8, 7, 6, 5, 4, 3]
     };
@@ -76,6 +162,7 @@ mod tests {
       head,
       metadata: Metadata {
         size: 0,
+        iv: [0; 16],
         content: Vec::new()
       },
       entries: vec![entry, entry2]
