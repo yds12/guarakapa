@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+pub const IV_LEN: usize = 16;
+
 /// Encrypt a message using a key and an initialization vector
 pub fn encrypt(content: &[u8], iv: &[u8], key: &[u8]) -> Vec<u8> {
   openssl::symm::encrypt(openssl::symm::Cipher::aes_256_cbc(), key,
@@ -45,7 +47,7 @@ mod tests {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
     let salt = generate_bytes(16);
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
-    let iv = generate_bytes(16);
+    let iv = generate_bytes(IV_LEN);
 
     let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]);
     let decrypted = decrypt(encrypted.as_slice(), &iv[..], &pw[..]);
@@ -57,7 +59,7 @@ mod tests {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
     let salt = generate_bytes(16);
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
-    let iv = generate_bytes(16);
+    let iv = generate_bytes(IV_LEN);
 
     let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]);
     assert!(content.as_bytes() != encrypted.as_slice());
