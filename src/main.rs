@@ -15,7 +15,7 @@ fn create_new_file() {
     println!("Password confirmation incorrect!");
   } else {
     let file = fman::File::new(pw);
-    fs::save(fman::encode(&file));
+    fs::save(fman::encode(&file)).expect("Failed to save file");
 
     println!("Your password file was created. \
              Run the program again to add new entries.");
@@ -34,7 +34,7 @@ fn print_usage(exec_name: &str) {
 }
 
 fn add_entry(entry_name: &str) {
-  let contents = fs::load();
+  let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
   let pw = scanpw!(None, "Enter your master password: ");
@@ -51,11 +51,11 @@ fn add_entry(entry_name: &str) {
   println!("");
 
   file.add_entry(pw, entry_name.to_string(), entry_pw);
-  fs::save(fman::encode(&file));
+  fs::save(fman::encode(&file)).expect("Failed to save file");
 }
 
 fn get_entry(entry_name: &str) {
-  let contents = fs::load();
+  let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
   let pw = scanpw!(None, "Enter your master password: ");
@@ -69,7 +69,7 @@ fn get_entry(entry_name: &str) {
 }
 
 fn remove_entry(entry_name: &str) {
-  let contents = fs::load();
+  let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
   let pw = scanpw!(None, "Enter your master password: ");
@@ -83,11 +83,11 @@ fn remove_entry(entry_name: &str) {
   }
 
   file.remove_entry(pw, entry_name);
-  fs::save(fman::encode(&file));
+  fs::save(fman::encode(&file)).expect("Failed to save file");
 }
 
 fn list_entries() {
-  let contents = fs::load();
+  let contents = fs::load().unwrap();
   let mut file = fman::decode(contents.as_slice());
 
   let pw = scanpw!(None, "Enter your master password: ");
