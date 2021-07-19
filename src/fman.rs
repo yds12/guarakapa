@@ -1,22 +1,30 @@
 use serde::{Serialize, Deserialize};
 use std::convert::TryInto;
+use anyhow::{Result, anyhow};
 use crate::crypto;
+
+type PWHash = [u8; 32];
+type PWSalt = [u8; 16];
+type IV = [u8; IV_LEN];
+
+const IV_LEN: usize = 16;
+const MSG_RAND_ERR: &str = "Internal error generating random number.";
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
-  pub pw_hash: [u8; 32],
-  pub salt: [u8; 16]
+  pub pw_hash: PWHash,
+  pub salt: PWSalt
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Metadata {
-  iv: [u8; 16],
+  iv: IV,
   content: Vec<u8>
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Entry {
-  iv: [u8; 16],
+  iv: IV,
   content: Vec<u8>
 }
 
@@ -33,37 +41,47 @@ pub struct OpenEntry {
 }
 
 impl File {
-  pub fn new(pw: String) -> Self {
-    let salt = crypto::generate_bytes(16);
-    let pw_hash = crypto::hash(vec![pw.as_bytes(), salt.as_slice()]);
-    let iv = crypto::generate_bytes(crypto::IV_LEN);
-    let key = crypto::derive_key(pw, salt.as_slice());
+  pub fn try_new(pw: String) -> Result<Self> {
+    let salt: PWSalt = crypto::generate_bytes(16)
+      .try_into()
+      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
+    let iv: IV = crypto::generate_bytes(IV_LEN)
+      .try_into()
+      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
+    let pw_hash = crypto::hash(vec![pw.as_bytes(), &salt[..]]);
+    let key = crypto::derive_key(pw, &salt[..]);
 
     let meta_content = Vec::<u8>::new();
-    let content = bincode::serialize(&meta_content).unwrap();
+    let content = bincode::serialize(&meta_content)?;
     let encrypted_content = crypto::encrypt(
-      content.as_slice(), iv.as_slice(), &key[..]);
+      content.as_slice(), &iv[..], &key[..])?;
 
-    File {
+    let f = File {
       head: Head {
         pw_hash,
-        salt: salt.try_into().unwrap()
+        salt
       },
       metadata: Metadata {
-        iv: iv.try_into().unwrap(),
-        content: encrypted_content.unwrap()
+        iv,
+        content: encrypted_content
       },
       entries: Vec::new()
-    }
+    };
+
+    Ok(f)
   }
 }
 
-pub fn encode(file: &File) -> Vec<u8> {
-  bincode::serialize(file).unwrap()
+pub fn encode(file: &File) -> Result<Vec<u8>> {
+  let bytes = bincode::serialize(file)?;
+  Ok(bytes)
 }
 
-pub fn decode(content: &[u8]) -> File {
-  bincode::deserialize(&content).unwrap()
+pub fn decode(content: &[u8]) -> Result<File> {
+  let file = bincode::deserialize(&content)?;
+  Ok(file)
 }
 
 impl File {
@@ -71,42 +89,61 @@ impl File {
   /// * `masterpw`: the user master password as a clear-text string
   /// * `name`: the name of the entry
   /// * `password`: the password to be stored for the new entry
-  pub fn add_entry(&mut self, masterpw: String, name: String, password: String) {
-    let iv = crypto::generate_bytes(crypto::IV_LEN);
+  pub fn add_entry(&mut self, masterpw: String, name: String, password: String)
+  -> Result<()> {
+    // TODO: check if entry name already exists
     let entry = OpenEntry {
       pw: password
     };
 
-    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
-    let content = bincode::serialize(&entry).unwrap();
-    let encrypted_content = crypto::encrypt(
-      content.as_slice(), iv.as_slice(), &key[..]).unwrap();
+    let content = bincode::serialize(&entry)?;
 
-    let new_entry = Entry {
-      iv: iv.try_into().unwrap(),
+    let iv: IV = crypto::generate_bytes(IV_LEN)
+      .try_into()
+      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
+    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+
+    let encrypted_content = crypto::encrypt(
+      content.as_slice(), &iv[..], &key[..])?;
+
+    let entry = Entry {
+      iv,
       content: encrypted_content
     };
 
-    self.entries.push(new_entry);
+    self.entries.push(entry);
 
     let metadata = crypto::decrypt(self.metadata.content.as_slice(),
-      &self.metadata.iv[..], &key[..]).unwrap();
-    let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+      &self.metadata.iv[..], &key[..])?;
+
+    let mut meta_content: Vec<String> =
+      bincode::deserialize(metadata.as_slice())?;
+
     meta_content.push(name);
 
-    let meta_content = bincode::serialize(&meta_content).unwrap();
-    let iv = crypto::generate_bytes(crypto::IV_LEN);
+    let meta_content = bincode::serialize(&meta_content)?;
+
+    let iv: IV = crypto::generate_bytes(IV_LEN)
+      .try_into()
+      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
     let encrypted_content = crypto::encrypt(
-      meta_content.as_slice(), iv.as_slice(), &key[..]).unwrap();
+      meta_content.as_slice(), &iv[..], &key[..])?;
     self.metadata.content = encrypted_content;
-    self.metadata.iv = iv.try_into().unwrap();
+    self.metadata.iv = iv;
+
+    Ok(())
   }
 
-  pub fn remove_entry(&mut self, masterpw: String, name: &str) {
+  pub fn remove_entry(&mut self, masterpw: String, name: &str) -> Result<()> {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+
     let metadata = crypto::decrypt(self.metadata.content.as_slice(),
-      &self.metadata.iv[..], &key[..]).unwrap();
-    let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+      &self.metadata.iv[..], &key[..])?;
+
+    let mut meta_content: Vec<String> =
+      bincode::deserialize(metadata.as_slice())?;
 
     let mut index = None;
     for (i, meta_entry) in meta_content.iter().enumerate() {
@@ -116,49 +153,59 @@ impl File {
       }
     }
 
-    match index {
-      Some(i) => {
-        self.entries.remove(i);
-        meta_content.remove(i);
+    if let Some(i) = index {
+      self.entries.remove(i);
+      meta_content.remove(i);
 
-        let meta_content = bincode::serialize(&meta_content).unwrap();
-        let iv = crypto::generate_bytes(crypto::IV_LEN);
-        let encrypted_content = crypto::encrypt(meta_content.as_slice(),
-          iv.as_slice(), &key[..]).unwrap();
-        self.metadata.content = encrypted_content;
-        self.metadata.iv = iv.try_into().unwrap();
-      },
-      _ => ()
+      let meta_content = bincode::serialize(&meta_content)?;
+
+      let iv: IV = crypto::generate_bytes(IV_LEN)
+        .try_into()
+        .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
+      let encrypted_content = crypto::encrypt(meta_content.as_slice(),
+        &iv[..], &key[..])?;
+
+      self.metadata.content = encrypted_content;
+      self.metadata.iv = iv;
     }
+
+    Ok(())
   }
 
-  pub fn get_entry(&mut self, masterpw: String, name: &str) -> Option<OpenEntry> {
+  pub fn get_entry(&mut self, masterpw: String, name: &str)
+  -> Result<Option<OpenEntry>> {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+
     let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]).unwrap();
-    let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..])?;
+
+    let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice())?;
 
     for (index, meta_entry) in meta_content.iter().enumerate() {
       if meta_entry == name {
         let entry = &self.entries[index];
 
         let entry_bytes = crypto::decrypt(
-          entry.content.as_slice(), &entry.iv[..], &key[..]).unwrap();
-        let open_entry: OpenEntry = bincode::deserialize(entry_bytes.as_slice()).unwrap();
+          entry.content.as_slice(), &entry.iv[..], &key[..])?;
 
-        return Some(open_entry);
+        let open_entry: OpenEntry =
+          bincode::deserialize(entry_bytes.as_slice())?;
+
+        return Ok(Some(open_entry));
       }
     }
-    None
+    Ok(None)
   }
 
-  pub fn list(&mut self, masterpw: String) -> Vec<String> {
+  pub fn list(&mut self, masterpw: String) -> Result<Vec<String>> {
     let key = crypto::derive_key(masterpw, &self.head.salt[..]);
 
     let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..]).unwrap();
-    let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice()).unwrap();
-    return meta_content;
+      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..])?;
+
+    let entry_names: Vec<String> = bincode::deserialize(metadata.as_slice())?;
+    Ok(entry_names)
   }
 }
 
@@ -195,14 +242,14 @@ mod tests {
   #[test]
   fn can_encode() {
     let file = get_file();
-    encode(&file);
+    encode(&file).unwrap();
   }
 
   #[test]
   fn can_decode() {
     let file = get_file();
-    let encoded = encode(&file);
-    let decoded = decode(encoded.as_slice());
+    let encoded = encode(&file).unwrap();
+    let decoded = decode(encoded.as_slice()).unwrap();
 
     assert_eq!(file, decoded);
   }

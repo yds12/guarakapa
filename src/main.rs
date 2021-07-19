@@ -6,8 +6,11 @@ mod fman;
 mod fs;
 
 const MSG_ENTER_PW: &str = "Enter your master password: ";
-const MSG_FAILED_SAVE: &str = "Failed to save file";
+const MSG_SAVE_ERR: &str = "Failed to save file";
+const MSG_LOAD_ERR: &str = "Failed to load file";
 const MSG_WRONG_PW: &str = "Password does not match!";
+const MSG_ENCODE_ERR: &str = "Failed to encode file.";
+const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
 fn create_new_file() {
   let pw = scanpw!(None, "Enter a new master password: ");
@@ -18,8 +21,8 @@ fn create_new_file() {
   if pw != confirm {
     println!("Password confirmation incorrect!");
   } else {
-    let file = fman::File::new(pw);
-    fs::save(fman::encode(&file)).expect(MSG_FAILED_SAVE);
+    let file = fman::File::try_new(pw).expect("Error creating new file.");
+    fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
 
     println!("Your password file was created. \
              Run the program again to add new entries.");
@@ -28,18 +31,18 @@ fn create_new_file() {
 
 fn print_usage(exec_name: &str) {
   println!("First time usage:\n\n\t{exec}\n\n\
-           General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
-           Commands:\n\n\
-           \tget entry_name\tretrieves the entry with name `entry_name`\n\
-           \tadd entry_name\tadds a new entry with name `entry_name`\n\
-           \trm entry_name\tremoves the entry with name `entry_name`\n\
-           \tlist\t\tlists all entries",
-           exec = exec_name);
+    General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
+    Commands:\n\n\
+    \tget entry_name\tretrieves the entry with name `entry_name`\n\
+    \tadd entry_name\tadds a new entry with name `entry_name`\n\
+    \trm entry_name\tremoves the entry with name `entry_name`\n\
+    \tls\t\tlists all entries",
+    exec = exec_name);
 }
 
 fn add_entry(entry_name: &str) {
-  let contents = fs::load().unwrap();
-  let mut file = fman::decode(contents.as_slice());
+  let contents = fs::load().expect(MSG_LOAD_ERR);
+  let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
@@ -54,27 +57,32 @@ fn add_entry(entry_name: &str) {
   let entry_pw = scanpw!(None, "Enter a new password for this entry: ");
   println!("");
 
-  file.add_entry(pw, entry_name.to_string(), entry_pw);
-  fs::save(fman::encode(&file)).expect(MSG_FAILED_SAVE);
+  if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry_pw) {
+    println!("Could not add entry. Reason: {}", e);
+    return;
+  }
+
+  fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
+  println!("Entry '{}' added successfully.", entry_name);
 }
 
 fn get_entry(entry_name: &str) {
-  let contents = fs::load().unwrap();
-  let mut file = fman::decode(contents.as_slice());
+  let contents = fs::load().expect(MSG_LOAD_ERR);
+  let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
 
-  if let Some(entry) = file.get_entry(pw, entry_name) {
-    println!("Entry recovered: {:?}", entry);
-  } else {
-    println!("Entry not found.");
+  match file.get_entry(pw, entry_name) {
+    Err(e) => println!("Error retrieving entry. Reason: {}", e),
+    Ok(Some(entry)) => println!("Entry recovered: {:?}", entry),
+    _ => println!("Entry not found."),
   }
 }
 
 fn remove_entry(entry_name: &str) {
-  let contents = fs::load().unwrap();
-  let mut file = fman::decode(contents.as_slice());
+  let contents = fs::load().expect(MSG_LOAD_ERR);
+  let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
@@ -86,19 +94,26 @@ fn remove_entry(entry_name: &str) {
     return;
   }
 
-  file.remove_entry(pw, entry_name);
-  fs::save(fman::encode(&file)).expect(MSG_FAILED_SAVE);
+  if let Err(e) = file.remove_entry(pw, entry_name) {
+    println!("Could not remove entry. Reason: {}", e);
+    return;
+  }
+
+  fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
+  println!("Entry '{}' removed successfully.", entry_name);
 }
 
 fn list_entries() {
-  let contents = fs::load().unwrap();
-  let mut file = fman::decode(contents.as_slice());
+  let contents = fs::load().expect(MSG_LOAD_ERR);
+  let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(None, MSG_ENTER_PW);
   println!("");
 
-  let entries = file.list(pw);
-  println!("Total entries: {:?}", entries);
+  match file.list(pw) {
+    Err(e) => println!("Error retrieving entries: {}", e),
+    Ok(entries) => println!("Total entries: {:?}", entries)
+  }
 }
 
 fn main() {
@@ -106,7 +121,7 @@ fn main() {
 
   if fs::file_exists() {
     match args.len() - 1 {
-      1 if args[1] == "list" => list_entries(),
+      1 if args[1] == "ls" => list_entries(),
       2 if args[1] == "add" => add_entry(&args[2]),
       2 if args[1] == "get" => get_entry(&args[2]),
       2 if args[1] == "rm" => remove_entry(&args[2]),

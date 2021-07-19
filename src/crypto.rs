@@ -1,8 +1,6 @@
 use anyhow::Result;
 use rand::prelude::*;
 
-pub const IV_LEN: usize = 16;
-
 /// Encrypt a message using a key and an initialization vector
 pub fn encrypt(content: &[u8], iv: &[u8], key: &[u8]) -> Result<Vec<u8>> {
   let encrypted = openssl::symm::encrypt(
@@ -50,7 +48,7 @@ mod tests {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
     let salt = generate_bytes(16);
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
-    let iv = generate_bytes(IV_LEN);
+    let iv = generate_bytes(16);
 
     let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]).unwrap();
     let decrypted = decrypt(encrypted.as_slice(), &iv[..], &pw[..]).unwrap();
@@ -62,7 +60,7 @@ mod tests {
     let content = "This is my text.\n\nLet's see if I can retrieve it!.";
     let salt = generate_bytes(16);
     let pw = derive_key("very strong secret!".to_string(), &salt[..]);
-    let iv = generate_bytes(IV_LEN);
+    let iv = generate_bytes(16);
 
     let encrypted = encrypt(content.as_bytes(), &iv[..], &pw[..]).unwrap();
     assert!(content.as_bytes() != encrypted.as_slice());
