@@ -1,6 +1,6 @@
 use std::env;
-use scanpw::scanpw;
 
+mod scanpw;
 mod crypto;
 mod fman;
 mod fs;
@@ -13,9 +13,9 @@ const MSG_ENCODE_ERR: &str = "Failed to encode file.";
 const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
 fn create_new_file() {
-  let pw = scanpw!(None, "Enter a new master password: ");
+  let pw = scanpw!("Enter a new master password: ");
   println!("");
-  let confirm = scanpw!(None, "Please repeat: ");
+  let confirm = scanpw!("Please repeat: ");
   println!("");
 
   if pw != confirm {
@@ -44,7 +44,7 @@ fn add_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(None, MSG_ENTER_PW);
+  let pw = scanpw!(MSG_ENTER_PW);
   println!("");
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
@@ -54,7 +54,7 @@ fn add_entry(entry_name: &str) {
     return;
   }
 
-  let entry_pw = scanpw!(None, "Enter a new password for this entry: ");
+  let entry_pw = scanpw!("Enter a new password for this entry: ");
   println!("");
 
   if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry_pw) {
@@ -70,7 +70,7 @@ fn get_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(None, MSG_ENTER_PW);
+  let pw = scanpw!(MSG_ENTER_PW);
   println!("");
 
   match file.get_entry(pw, entry_name) {
@@ -84,7 +84,7 @@ fn remove_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(None, MSG_ENTER_PW);
+  let pw = scanpw!(MSG_ENTER_PW);
   println!("");
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
@@ -107,7 +107,7 @@ fn list_entries() {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(None, MSG_ENTER_PW);
+  let pw = scanpw!(MSG_ENTER_PW);
   println!("");
 
   match file.list(pw) {
