@@ -35,11 +35,7 @@ use crossterm::{
 /// Reads a password from standard input
 ///
 /// Invocations of [`scanpw`] expand to an expression retuning a [`String`] that
-/// contains a line of input from `stdin`. It can be invoked with arguments
-/// identical to those of [`print`], and if so, those arguments will be used
-/// to generate a prompt on the standard output. Input will begin on the same
-/// line that the prompt ends, if any. If no arguments are provided, input will
-/// start where the cursor is, which is likely to be on its own empty line.
+/// contains a line of input from `stdin`.
 ///
 /// # Panics
 ///
@@ -112,9 +108,7 @@ pub fn try_scanpw() -> crossterm::Result<String> {
     }
   }
 
-  // Reset the terminal back to normal
   terminal::disable_raw_mode()?;
-
   Ok(pw)
 }
 
