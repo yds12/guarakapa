@@ -12,6 +12,15 @@ const MSG_WRONG_PW: &str = "Password does not match!";
 const MSG_ENCODE_ERR: &str = "Failed to encode file.";
 const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
+fn copy_to_clipboard_and_block(text: String) {
+  let clipboard = x11_clipboard::Clipboard::new().unwrap();
+  clipboard.store(clipboard.setter.atoms.clipboard,
+    clipboard.setter.atoms.utf8_string, text).unwrap();
+
+  let mut s = String::new();
+  std::io::stdin().read_line(&mut s).unwrap();
+}
+
 fn create_new_file() {
   let pw = scanpw!("Enter a new master password: ");
   println!("");
@@ -75,7 +84,14 @@ fn get_entry(entry_name: &str) {
 
   match file.get_entry(pw, entry_name) {
     Err(e) => println!("Error retrieving entry. Reason: {}", e),
-    Ok(Some(entry)) => println!("Entry recovered: {:?}", entry),
+    Ok(Some(entry)) => {
+      println!("\nEntry `{}` recovered.\n\
+        Password copied to the clipboard, paste it (CTRL + V) somewhere to
+        use.\n\
+        Note that once you press ENTER the program will be closed, \
+        and the clipboard might be cleared. {:?}", entry_name, entry);
+      copy_to_clipboard_and_block(entry.pw);
+    }
     _ => println!("Entry not found."),
   }
 }

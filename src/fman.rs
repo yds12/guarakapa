@@ -37,7 +37,7 @@ pub struct File {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct OpenEntry {
-  pw: String
+  pub pw: String
 }
 
 impl File {
