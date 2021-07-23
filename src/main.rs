@@ -12,13 +12,17 @@ const MSG_WRONG_PW: &str = "Password does not match!";
 const MSG_ENCODE_ERR: &str = "Failed to encode file.";
 const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
+fn get_input() -> String {
+  let mut s = String::new();
+  std::io::stdin().read_line(&mut s).unwrap();
+  s.trim_end().to_owned()
+}
+
 fn copy_to_clipboard_and_block(text: String) {
   let clipboard = x11_clipboard::Clipboard::new().unwrap();
   clipboard.store(clipboard.setter.atoms.clipboard,
     clipboard.setter.atoms.utf8_string, text).unwrap();
-
-  let mut s = String::new();
-  std::io::stdin().read_line(&mut s).unwrap();
+  get_input();
 }
 
 fn create_new_file() {
@@ -66,7 +70,16 @@ fn add_entry(entry_name: &str) {
   let entry_pw = scanpw!("Enter a new password for this entry: ");
   println!("");
 
-  if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry_pw) {
+  println!("Enter an email for this entry (or just press ENTER to leave it \
+    blank):");
+  let entry_email = get_input();
+
+  let entry = fman::OpenEntry {
+    pw: entry_pw,
+    email: entry_email
+  };
+
+  if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry) {
     println!("Could not add entry. Reason: {}", e);
     return;
   }

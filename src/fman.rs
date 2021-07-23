@@ -37,7 +37,8 @@ pub struct File {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct OpenEntry {
-  pub pw: String
+  pub pw: String,
+  pub email: String
 }
 
 impl File {
@@ -89,13 +90,9 @@ impl File {
   /// * `masterpw`: the user master password as a clear-text string
   /// * `name`: the name of the entry
   /// * `password`: the password to be stored for the new entry
-  pub fn add_entry(&mut self, masterpw: String, name: String, password: String)
+  pub fn add_entry(&mut self, masterpw: String, name: String, entry: OpenEntry)
   -> Result<()> {
     // TODO: check if entry name already exists
-    let entry = OpenEntry {
-      pw: password
-    };
-
     let content = bincode::serialize(&entry)?;
 
     let iv: IV = crypto::generate_bytes(IV_LEN)
