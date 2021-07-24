@@ -46,6 +46,7 @@ fn print_usage(exec_name: &str) {
   println!("First time usage:\n\n\t{exec}\n\n\
     General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
     Commands:\n\n\
+    \tentry_name\tretrieves the entry with name `entry_name`\n\
     \tget entry_name\tretrieves the entry with name `entry_name`\n\
     \tadd entry_name\tadds a new entry with name `entry_name`\n\
     \trm entry_name\tremoves the entry with name `entry_name`\n\
@@ -105,7 +106,7 @@ fn get_entry(entry_name: &str) {
         and the clipboard might be cleared. {:?}", entry_name, entry);
       copy_to_clipboard_and_block(entry.pw);
     }
-    _ => println!("Entry not found."),
+    _ => println!("Entry `{}` not found.", entry_name),
   }
 }
 
@@ -151,6 +152,7 @@ fn main() {
   if fs::file_exists() {
     match args.len() - 1 {
       1 if args[1] == "ls" => list_entries(),
+      1 => get_entry(&args[1]),
       2 if args[1] == "add" => add_entry(&args[2]),
       2 if args[1] == "get" => get_entry(&args[2]),
       2 if args[1] == "rm" => remove_entry(&args[2]),
