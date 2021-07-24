@@ -3,6 +3,10 @@ name = "guarakapa"
 version = "0.6.0"
 edition = "2018"
 
+[[bin]]
+name = "kapa"
+path = "src/main.rs"
+
 [dependencies]
 openssl = "0.10"
 rand = "0.8"
