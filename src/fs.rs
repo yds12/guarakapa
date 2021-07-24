@@ -41,7 +41,8 @@ pub fn save(contents: Vec<u8>) -> Result<()> {
 }
 
 pub fn load() -> Result<Vec<u8>> {
-  let content = std::fs::read(FILENAME)?;
+  let path = data_dir().join(FILENAME);
+  let content = std::fs::read(path)?;
   Ok(content)
 }
 
