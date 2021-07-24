@@ -37,8 +37,8 @@ fn create_new_file() {
     let file = fman::File::try_new(pw).expect("Error creating new file.");
     fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
 
-    println!("Your password file was created. \
-             Run the program again to add new entries.");
+    println!("Your password file was created (at {}). \
+             Run the program again to add new entries.", fs::file_path());
   }
 }
 
