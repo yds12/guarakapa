@@ -37,8 +37,39 @@ pub struct File {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct OpenEntry {
-  pub pw: String,
-  pub email: String
+  pub desc: String,
+  pub user: String,
+  pub email: String,
+  pub notes: String,
+  pub pw: String
+}
+
+impl OpenEntry {
+  fn is_empty(&self) -> bool {
+    self.desc.is_empty() && self.user.is_empty() && self.email.is_empty()
+      && self.notes.is_empty()
+  }
+}
+
+impl std::fmt::Display for OpenEntry {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    if self.is_empty() {
+      return write!(f, "---");
+    }
+    if !self.desc.is_empty() {
+      write!(f, "Description: {}\n", self.desc)?;
+    }
+    if !self.user.is_empty() {
+      write!(f, "User name: {}\n", self.user)?;
+    }
+    if !self.email.is_empty() {
+      write!(f, "e-mail: {}\n", self.email)?;
+    }
+    if !self.notes.is_empty() {
+      write!(f, "Notes: {}\n", self.notes)?;
+    }
+    write!(f, "")
+  }
 }
 
 impl File {

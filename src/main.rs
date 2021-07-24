@@ -68,16 +68,31 @@ fn add_entry(entry_name: &str) {
     return;
   }
 
-  let entry_pw = scanpw!("Enter a new password for this entry: ");
-  println!("");
+  println!("Enter a description for this entry (or just press ENTER to leave \
+    it blank):");
+  let entry_desc = get_input();
+
+  println!("Enter a user name for this entry (or just press ENTER to leave it \
+    blank):");
+  let entry_user = get_input();
 
   println!("Enter an email for this entry (or just press ENTER to leave it \
     blank):");
   let entry_email = get_input();
 
+  println!("Enter other notes/observations for this entry (or just press \
+    ENTER to leave it blank):");
+  let entry_notes = get_input();
+
+  let entry_pw = scanpw!("Enter a new password for this entry: ");
+  println!("");
+
   let entry = fman::OpenEntry {
-    pw: entry_pw,
-    email: entry_email
+    desc: entry_desc,
+    user: entry_user,
+    email: entry_email,
+    notes: entry_notes,
+    pw: entry_pw
   };
 
   if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry) {
@@ -100,10 +115,11 @@ fn get_entry(entry_name: &str) {
     Err(e) => println!("Error retrieving entry. Reason: {}", e),
     Ok(Some(entry)) => {
       println!("\nEntry `{}` recovered.\n\
-        Password copied to the clipboard, paste it (CTRL + V) somewhere to
+        Password copied to the clipboard, paste it (CTRL + V) somewhere to \
         use.\n\
         Note that once you press ENTER the program will be closed, \
-        and the clipboard might be cleared. {:?}", entry_name, entry);
+        and the clipboard might be cleared. \nEntry:\n\n{}\n",
+        entry_name, entry);
       copy_to_clipboard_and_block(entry.pw);
     }
     _ => println!("Entry `{}` not found.", entry_name),
