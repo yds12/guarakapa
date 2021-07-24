@@ -71,7 +71,7 @@ pub fn try_scanpw() -> crossterm::Result<String> {
         KeyEvent {
           code: KeyCode::Char(c),
           modifiers,
-        } if modifiers.is_empty() => {
+        } if modifiers.is_empty() || modifiers == KeyModifiers::SHIFT => {
           pw.push(c);
         }
 
