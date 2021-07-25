@@ -1,6 +1,6 @@
 **This is a work in progress. Please do not trust it with your passwords.**
 
-A password manager for the terminal written in Rust.
+A password manager for the Linux (X11) terminal written in Rust.
 
 Main goal is simplicity:
 
@@ -21,7 +21,7 @@ results shown, password is stored in the clipboard);
 
 Experience should be more or less like the following. Retrieving a password:
 
-    $ password-manager get github
+    $ kapa github
     Please enter your master password:
     *******
 
@@ -32,7 +32,7 @@ Experience should be more or less like the following. Retrieving a password:
 
 Adding a password:
 
-    $ password-manager add github
+    $ kapa add github
     Please enter the description:
     Github account at github.com
 
