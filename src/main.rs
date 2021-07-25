@@ -117,11 +117,9 @@ fn get_entry(entry_name: &str) {
   match file.get_entry(pw, entry_name) {
     Err(e) => println!("Error retrieving entry. Reason: {}", e),
     Ok(Some(entry)) => {
-      println!("\nEntry `{}` recovered.\n\
-        Password copied to the clipboard, paste it (CTRL + V) somewhere to \
-        use.\n\
-        Note that once you press ENTER the program will be closed, \
-        and the clipboard might be cleared. \nEntry:\n\n{}\n",
+      println!("\nEntry `{}` recovered.\n{}\
+        Password: ******   [copied to clipboard, paste to use].\n\n\
+        Press ENTER to close the program (clipboard may be erased).",
         entry_name, entry);
       copy_to_clipboard_and_block(entry.pw);
     }
