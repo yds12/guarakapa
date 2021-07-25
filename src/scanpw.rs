@@ -113,7 +113,7 @@ pub fn try_scanpw() -> crossterm::Result<String> {
 }
 
 fn die() {
- use nix::sys::signal::{raise, Signal::SIGINT};
- raise(SIGINT).unwrap();
+  use nix::sys::signal::{raise, Signal::SIGINT};
+  raise(SIGINT).unwrap();
 }
 
