@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::convert::TryInto;
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use crate::crypto;
 
 type PWHash = [u8; 32];
@@ -123,15 +123,23 @@ impl File {
   /// * `password`: the password to be stored for the new entry
   pub fn add_entry(&mut self, masterpw: String, name: String, entry: OpenEntry)
   -> Result<()> {
-    // TODO: check if entry name already exists
-    let content = bincode::serialize(&entry)?;
+    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+
+    let metadata = crypto::decrypt(self.metadata.content.as_slice(),
+      &self.metadata.iv[..], &key[..])?;
+
+    let mut meta_content: Vec<String> =
+      bincode::deserialize(metadata.as_slice())?;
+
+    if meta_content.contains(&name) {
+      bail!("Entry `{}` already exists.", name);
+    }
 
     let iv: IV = crypto::generate_bytes(IV_LEN)
       .try_into()
       .map_err(|_| anyhow!(MSG_RAND_ERR))?;
 
-    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
-
+    let content = bincode::serialize(&entry)?;
     let encrypted_content = crypto::encrypt(
       content.as_slice(), &iv[..], &key[..])?;
 
@@ -141,12 +149,6 @@ impl File {
     };
 
     self.entries.push(entry);
-
-    let metadata = crypto::decrypt(self.metadata.content.as_slice(),
-      &self.metadata.iv[..], &key[..])?;
-
-    let mut meta_content: Vec<String> =
-      bincode::deserialize(metadata.as_slice())?;
 
     meta_content.push(name);
 
