@@ -66,5 +66,5 @@ entry is selected, only the desired entry is decrypted.
 We will use AES-256 in CBC mode for encryption. An initialization vector (IV) is
 randomly generated and stored with each message/entry. For the moment, we have
 no plans to use MAC or anything for authentication -- i.e. you will not be able
-to tell if the data is tampered with.
+to tell if the data has been tampered with.
 
