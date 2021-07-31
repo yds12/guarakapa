@@ -7,6 +7,10 @@ edition = "2018"
 name = "kapa"
 path = "src/main.rs"
 
+[lib]
+name = "guarakapa"
+path = "src/lib.rs"
+
 [dependencies]
 openssl = "0.10"
 rand = "0.8"

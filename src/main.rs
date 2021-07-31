@@ -1,9 +1,5 @@
 use std::env;
-
-mod scanpw;
-mod crypto;
-mod fman;
-mod fs;
+use guarakapa::{scanpw, crypto, fman, fs};
 
 const MSG_ENTER_PW: &str = "Enter your master password: ";
 const MSG_SAVE_ERR: &str = "Failed to save file";
