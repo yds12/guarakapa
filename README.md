@@ -2,6 +2,19 @@
 
 A password manager for the Linux (X11) terminal written in Rust.
 
+# Using
+
+Run tests with:
+
+    cargo test --test-threads=1                  # all tests
+    cargo test --bins --lib                      # unit tests
+    cargo test --test '*' -- --test-threads=1    # integration tests
+
+For now, we have to avoid running integration tests in parallel because they
+all manipulate the same data file.
+
+# About
+
 Main goal is simplicity:
 
 * other alternatives like
