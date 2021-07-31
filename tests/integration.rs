@@ -23,13 +23,36 @@ fn get_dummy_entry() -> fman::OpenEntry {
   }
 }
 
+fn create_file() -> Vec<u8> {
+  let pw = String::from(PASSWORD);
+  let file = fman::File::try_new(pw).unwrap();
+  let file_contents = fman::encode(&file).unwrap();
+  let original_content = file_contents.clone();
+  fs::save(file_contents).unwrap();
+
+  return original_content;
+}
+
+fn read_file() -> fman::File {
+  let contents = fs::load().unwrap();
+  fman::decode(contents.as_slice()).unwrap()
+}
+
+fn add_dummy_entry(file: &mut fman::File, pw: String, entry_name: &str) -> Vec<u8> {
+  let entry = get_dummy_entry();
+  file.add_entry(pw, entry_name.to_string(), entry).unwrap();
+  let file_contents = fman::encode(file).unwrap();
+  let new_content = file_contents.clone();
+  fs::save(file_contents).unwrap();
+
+  return new_content;
+}
+
 #[test]
 fn can_create_file() {
   delete_file();
 
-  let pw = String::from(PASSWORD);
-  let file = fman::File::try_new(pw).expect("Error creating new file.");
-  fs::save(fman::encode(&file).unwrap()).unwrap();
+  create_file();
   assert!(fs::file_exists());
 
   delete_file();
@@ -40,15 +63,11 @@ fn can_create_file() {
 fn can_add_entry() {
   delete_file();
 
-  let pw = String::from(PASSWORD);
-  let file = fman::File::try_new(pw).expect("Error creating new file.");
-  let file_contents = fman::encode(&file).unwrap();
-  let original_content = file_contents.clone();
-  fs::save(file_contents).unwrap();
+  let original_content = create_file();
   assert!(fs::file_exists());
 
-  let contents = fs::load().unwrap();
-  let mut file = fman::decode(contents.as_slice()).unwrap();
+  let mut file = read_file();
+
   let pw = String::from(PASSWORD);
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
 
@@ -56,12 +75,7 @@ fn can_add_entry() {
     panic!("Wrong password hash.");
   }
 
-  let entry_name = "entry1";
-  let entry = get_dummy_entry();
-  file.add_entry(pw, entry_name.to_string(), entry).unwrap();
-  let file_contents = fman::encode(&file).unwrap();
-  let new_content = file_contents.clone();
-  fs::save(file_contents).unwrap();
+  let new_content = add_dummy_entry(&mut file, pw, "entry1");
   assert!(original_content != new_content);
 
   delete_file();
