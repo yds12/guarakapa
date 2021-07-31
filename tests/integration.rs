@@ -38,7 +38,8 @@ fn read_file() -> fman::File {
   fman::decode(contents.as_slice()).unwrap()
 }
 
-fn add_dummy_entry(file: &mut fman::File, pw: String, entry_name: &str) -> Vec<u8> {
+fn add_dummy_entry(file: &mut fman::File, pw: String, entry_name: &str)
+-> Vec<u8> {
   let entry = get_dummy_entry();
   file.add_entry(pw, entry_name.to_string(), entry).unwrap();
   let file_contents = fman::encode(file).unwrap();
@@ -102,19 +103,18 @@ fn can_add_several_entries() {
     panic!("Wrong password hash.");
   }
 
-  let new_content = add_dummy_entry(&mut file, pw, "entry1");
-  assert!(original_content != new_content);
-  assert!(new_content.len() > original_content.len());
+  let mut old_content = original_content;
 
-  let pw = String::from(PASSWORD);
-  let newer_content = add_dummy_entry(&mut file, pw, "entry2");
-  assert!(new_content != newer_content);
-  assert!(newer_content.len() > new_content.len());
+  for i in 0..5 {
+    let pw = String::from(PASSWORD);
+    let entry_name = format!("entry{}", i);
+    let new_content = add_dummy_entry(&mut file, pw, &entry_name);
 
-  let pw = String::from(PASSWORD);
-  let newest_content = add_dummy_entry(&mut file, pw, "entry3");
-  assert!(newer_content != newest_content);
-  assert!(newest_content.len() > newer_content.len());
+    assert!(new_content != old_content);
+    assert!(new_content.len() > old_content.len());
+
+    old_content = new_content;
+  }
 
   delete_file();
   assert!(!fs::file_exists());
