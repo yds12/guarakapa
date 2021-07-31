@@ -8,6 +8,10 @@ const MSG_WRONG_PW: &str = "Password does not match!";
 const MSG_ENCODE_ERR: &str = "Failed to encode file.";
 const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
+macro_rules! msg_enter_field {
+  () => { "Enter {} for this entry (or just press ENTER to leave it blank):" }
+}
+
 fn get_input() -> String {
   let mut s = String::new();
   std::io::stdin().read_line(&mut s).unwrap();
@@ -67,20 +71,16 @@ fn add_entry(entry_name: &str) {
     return;
   }
 
-  println!("Enter a description for this entry (or just press ENTER to leave \
-    it blank):");
+  println!(msg_enter_field!(), "a description");
   let entry_desc = get_input();
 
-  println!("Enter a user name for this entry (or just press ENTER to leave it \
-    blank):");
+  println!(msg_enter_field!(), "a user name");
   let entry_user = get_input();
 
-  println!("Enter an email for this entry (or just press ENTER to leave it \
-    blank):");
+  println!(msg_enter_field!(), "an email");
   let entry_email = get_input();
 
-  println!("Enter other notes/observations for this entry (or just press \
-    ENTER to leave it blank):");
+  println!(msg_enter_field!(), "other notes/observations");
   let entry_notes = get_input();
 
   let entry_pw = scanpw!("Enter a new password for this entry: ");
