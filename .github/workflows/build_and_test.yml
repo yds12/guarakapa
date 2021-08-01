@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - name: install dependencies
-      run: sudo apt install libxcb-xfixes0 libxcb-shape0
+      run: sudo apt install libxcb-shape0-dev libxcb-xfixes0-dev
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
@@ -24,3 +24,4 @@ jobs:
       run: cargo test --verbose --bins --lib
     - name: Run integration tests
       run: cargo test --verbose --test '*' -- --test-threads=1
+
