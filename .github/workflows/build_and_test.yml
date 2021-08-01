@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - name: install dependencies
-      run: sudo apt install libxcb1
+      run: sudo apt install libxcb-xfixes0 libxcb-shape0
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
