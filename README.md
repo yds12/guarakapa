@@ -6,6 +6,10 @@ A password manager for the Linux (X11) terminal written in Rust.
 
 # Install and Run
 
+Install dependencies (`libxcb-shape` and `libxcb-xfixes`). For Ubuntu:
+
+    $ apt install libxcb-shape0-dev libxcb-xfixes0-dev
+
 Install using cargo:
 
     $ git clone https://github.com/yds12/guarakapa
