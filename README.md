@@ -1,3 +1,5 @@
+![tests](https://github.com/yds12/guarakapa/actions/workflows/build_and_test.yml/badge.svg)
+
 **This is a work in progress. Please do not trust it with your passwords.**
 
 A password manager for the Linux (X11) terminal written in Rust.
