@@ -30,9 +30,9 @@ fn copy_to_clipboard_and_block(text: String) {
 
 fn create_new_file() {
   let pw = scanpw!("Enter a new master password: ");
-  println!("");
+  println!();
   let confirm = scanpw!("Please repeat: ");
-  println!("");
+  println!();
 
   if pw != confirm {
     println!("Password confirmation incorrect!");
@@ -62,7 +62,7 @@ fn add_entry(entry_name: &str) {
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(MSG_ENTER_PW);
-  println!("");
+  println!();
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
 
@@ -84,7 +84,7 @@ fn add_entry(entry_name: &str) {
   let entry_notes = get_input();
 
   let entry_pw = scanpw!("Enter a new password for this entry: ");
-  println!("");
+  println!();
 
   let entry = fman::OpenEntry {
     desc: entry_desc,
@@ -108,7 +108,7 @@ fn get_entry(entry_name: &str) {
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(MSG_ENTER_PW);
-  println!("");
+  println!();
 
   match file.get_entry(pw, entry_name) {
     Err(e) => println!("Error retrieving entry. Reason: {}", e),
@@ -128,7 +128,7 @@ fn remove_entry(entry_name: &str) {
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(MSG_ENTER_PW);
-  println!("");
+  println!();
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
 
@@ -151,7 +151,7 @@ fn list_entries() {
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
   let pw = scanpw!(MSG_ENTER_PW);
-  println!("");
+  println!();
 
   match file.list(pw) {
     Err(e) => println!("Error retrieving entries: {}", e),
@@ -171,13 +171,11 @@ fn main() {
       2 if args[1] == "rm" => remove_entry(&args[2]),
       _ => print_usage(&args[0])
     }
+  } else if args.len() > 1 {
+    println!("Password file not found!\nIs this your first time usage?\n");
+    print_usage(&args[0]);
   } else {
-    if args.len() > 1 {
-      println!("Password file not found!\nIs this your first time usage?\n");
-      print_usage(&args[0]);
-    } else {
-      create_new_file();
-    }
+    create_new_file();
   }
 }
 

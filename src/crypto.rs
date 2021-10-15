@@ -36,7 +36,7 @@ pub fn generate_bytes(n: usize) -> Vec<u8> {
 
   // this RNG is supposed to be cryptographically secure
   rand::thread_rng().fill_bytes(&mut bytes[..]);
-  bytes.into()
+  bytes
 }
 
 #[cfg(test)]

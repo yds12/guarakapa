@@ -57,16 +57,16 @@ impl std::fmt::Display for OpenEntry {
       return write!(f, "---");
     }
     if !self.desc.is_empty() {
-      write!(f, "Description: {}\n", self.desc)?;
+      writeln!(f, "Description: {}", self.desc)?;
     }
     if !self.user.is_empty() {
-      write!(f, "User name: {}\n", self.user)?;
+      writeln!(f, "User name: {}", self.user)?;
     }
     if !self.email.is_empty() {
-      write!(f, "e-mail: {}\n", self.email)?;
+      writeln!(f, "e-mail: {}", self.email)?;
     }
     if !self.notes.is_empty() {
-      write!(f, "Notes: {}\n", self.notes)?;
+      writeln!(f, "Notes: {}", self.notes)?;
     }
     write!(f, "")
   }
@@ -112,7 +112,7 @@ pub fn encode(file: &File) -> Result<Vec<u8>> {
 }
 
 pub fn decode(content: &[u8]) -> Result<File> {
-  let file = bincode::deserialize(&content)?;
+  let file = bincode::deserialize(content)?;
   Ok(file)
 }
 
