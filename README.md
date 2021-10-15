@@ -22,7 +22,7 @@ And run:
 
 Run tests with:
 
-    $ cargo test --test-threads=1                  # all tests
+    $ cargo test -- --test-threads=1               # all tests
     $ cargo test --bins --lib                      # unit tests
     $ cargo test --test '*' -- --test-threads=1    # integration tests
 
