@@ -49,6 +49,16 @@ fn add_dummy_entry(file: &mut fman::File, pw: String, entry_name: &str)
   return new_content;
 }
 
+fn remove_entry(file: &mut fman::File, pw: String, entry_name: &str)
+-> Vec<u8> {
+  file.remove_entry(pw, entry_name).unwrap();
+  let file_contents = fman::encode(file).unwrap();
+  let new_content = file_contents.clone();
+  fs::save(file_contents).unwrap();
+
+  return new_content;
+}
+
 #[test]
 fn can_create_file() {
   delete_file();
@@ -114,6 +124,46 @@ fn can_add_several_entries() {
     assert!(new_content.len() > old_content.len());
 
     old_content = new_content;
+  }
+
+  delete_file();
+  assert!(!fs::file_exists());
+}
+
+#[test]
+fn can_delete_entry() {
+  delete_file();
+
+  let original_content = create_file();
+  assert!(fs::file_exists());
+  assert!(original_content.len() > 0);
+
+  let mut file = read_file();
+
+  let pw = String::from(PASSWORD);
+  let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
+
+  if pw_hash != file.head.pw_hash {
+    panic!("Wrong password hash.");
+  }
+
+  let mut contents = Vec::new();
+  contents.push(original_content);
+
+  for i in 1..6 {
+    let pw = String::from(PASSWORD);
+    let entry_name = format!("entry{}", i);
+    let new_content = add_dummy_entry(&mut file, pw, &entry_name);
+    contents.push(new_content);
+  }
+
+  for i in 1..6 {
+    let j = 6 - i;
+    let pw = String::from(PASSWORD);
+    let entry_name = format!("entry{}", j);
+    let new_content = remove_entry(&mut file, pw, &entry_name);
+
+    assert!(new_content.len() < contents[j].len());
   }
 
   delete_file();
