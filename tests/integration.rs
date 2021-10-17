@@ -171,6 +171,42 @@ fn can_delete_entry() {
 }
 
 #[test]
+fn can_list_entries() {
+  delete_file();
+
+  let original_content = create_file();
+  assert!(fs::file_exists());
+  assert!(original_content.len() > 0);
+
+  let mut file = read_file();
+
+  let pw = String::from(PASSWORD);
+  let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
+
+  if pw_hash != file.head.pw_hash {
+    panic!("Wrong password hash.");
+  }
+
+  for i in 0..5 {
+    let pw = String::from(PASSWORD);
+    let entry_name = format!("entry{}", i);
+    add_dummy_entry(&mut file, pw, &entry_name);
+  }
+
+  let list = file.list(pw);
+
+  assert!(list.is_ok());
+
+  for i in 0..5 {
+    let entry_name = format!("entry{}", i);
+    assert!(list.as_ref().unwrap().contains(&entry_name));
+  }
+
+  delete_file();
+  assert!(!fs::file_exists());
+}
+
+#[test]
 fn can_retrieve_entry() {
   delete_file();
 
