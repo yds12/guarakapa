@@ -11,6 +11,8 @@ fn delete_file() {
       _ => panic!("{}", e)
     }
   }
+
+  assert!(!fs::file_exists());
 }
 
 fn get_dummy_entry() -> fman::OpenEntry {
@@ -29,6 +31,9 @@ fn create_file() -> Vec<u8> {
   let file_contents = fman::encode(&file).unwrap();
   let original_content = file_contents.clone();
   fs::save(file_contents).unwrap();
+
+  assert!(fs::file_exists());
+  assert!(original_content.len() > 0);
 
   return original_content;
 }
@@ -64,11 +69,8 @@ fn can_create_file() {
   delete_file();
 
   let contents = create_file();
-  assert!(fs::file_exists());
-  assert!(contents.len() > 0);
 
   delete_file();
-  assert!(!fs::file_exists());
 }
 
 #[test]
@@ -76,9 +78,6 @@ fn can_add_entry() {
   delete_file();
 
   let original_content = create_file();
-  assert!(fs::file_exists());
-  assert!(original_content.len() > 0);
-
   let mut file = read_file();
 
   let pw = String::from(PASSWORD);
@@ -93,7 +92,6 @@ fn can_add_entry() {
   assert!(new_content.len() > original_content.len());
 
   delete_file();
-  assert!(!fs::file_exists());
 }
 
 #[test]
@@ -101,9 +99,6 @@ fn can_add_several_entries() {
   delete_file();
 
   let original_content = create_file();
-  assert!(fs::file_exists());
-  assert!(original_content.len() > 0);
-
   let mut file = read_file();
 
   let pw = String::from(PASSWORD);
@@ -127,7 +122,6 @@ fn can_add_several_entries() {
   }
 
   delete_file();
-  assert!(!fs::file_exists());
 }
 
 #[test]
@@ -135,9 +129,6 @@ fn can_delete_entry() {
   delete_file();
 
   let original_content = create_file();
-  assert!(fs::file_exists());
-  assert!(original_content.len() > 0);
-
   let mut file = read_file();
 
   let pw = String::from(PASSWORD);
@@ -167,7 +158,6 @@ fn can_delete_entry() {
   }
 
   delete_file();
-  assert!(!fs::file_exists());
 }
 
 #[test]
@@ -175,9 +165,6 @@ fn can_list_entries() {
   delete_file();
 
   let original_content = create_file();
-  assert!(fs::file_exists());
-  assert!(original_content.len() > 0);
-
   let mut file = read_file();
 
   let pw = String::from(PASSWORD);
@@ -203,7 +190,6 @@ fn can_list_entries() {
   }
 
   delete_file();
-  assert!(!fs::file_exists());
 }
 
 #[test]
@@ -211,9 +197,6 @@ fn can_retrieve_entry() {
   delete_file();
 
   let original_content = create_file();
-  assert!(fs::file_exists());
-  assert!(original_content.len() > 0);
-
   let mut file = read_file();
 
   let pw = String::from(PASSWORD);
@@ -234,6 +217,5 @@ fn can_retrieve_entry() {
   assert_eq!(entry, get_dummy_entry());
 
   delete_file();
-  assert!(!fs::file_exists());
 }
 
