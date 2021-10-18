@@ -10,6 +10,7 @@ fn data_dir() -> PathBuf {
   Path::new(&home).join(".config").join("guarakapa")
 }
 
+// for debug and tests
 #[cfg(debug_assertions)]
 fn data_dir() -> PathBuf {
   Path::new(".").to_path_buf()
