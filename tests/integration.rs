@@ -89,7 +89,7 @@ fn can_add_entry() {
   }
 
   let new_content = add_dummy_entry(&mut file, pw, "entry1");
-  assert!(original_content != new_content);
+  assert_ne!(original_content, new_content);
   assert!(new_content.len() > original_content.len());
 
   delete_file();
@@ -120,7 +120,7 @@ fn can_add_several_entries() {
     let entry_name = format!("entry{}", i);
     let new_content = add_dummy_entry(&mut file, pw, &entry_name);
 
-    assert!(new_content != old_content);
+    assert_ne!(new_content, old_content);
     assert!(new_content.len() > old_content.len());
 
     old_content = new_content;
@@ -225,7 +225,7 @@ fn can_retrieve_entry() {
 
   let entry_name = "entry1";
   let new_content = add_dummy_entry(&mut file, pw, entry_name);
-  assert!(original_content != new_content);
+  assert_ne!(original_content, new_content);
   assert!(new_content.len() > original_content.len());
 
   let pw = String::from(PASSWORD);
