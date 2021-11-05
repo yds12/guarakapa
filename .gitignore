@@ -1,4 +1,5 @@
 /target
 /.notes
 *.swp
+/tarpaulin-report.html
 

@@ -67,9 +67,7 @@ fn remove_entry(file: &mut fman::File, pw: String, entry_name: &str)
 #[test]
 fn can_create_file() {
   delete_file();
-
-  let contents = create_file();
-
+  create_file();
   delete_file();
 }
 
@@ -163,8 +161,8 @@ fn can_delete_entry() {
 #[test]
 fn can_list_entries() {
   delete_file();
+  create_file();
 
-  let original_content = create_file();
   let mut file = read_file();
 
   let pw = String::from(PASSWORD);
