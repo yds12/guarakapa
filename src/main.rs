@@ -160,14 +160,22 @@ fn list_entries() {
   }
 }
 
-fn data_file_path(){
-  println!("data file path :{}", fs::file_path());
+fn data_file_path() {
+  println!("data file path: {}", fs::file_path());
+}
+
+fn show_version() {
+  println!("{}", env!("CARGO_PKG_VERSION"));
 }
 
 fn main() {
   let args: Vec<String> = env::args().collect();
 
-  if fs::file_exists() {
+  if args.len() == 2
+    && vec!["version", "--version", "-v"].contains(&args[1].as_str()) {
+    show_version();
+  }
+  else if fs::file_exists() {
     match args.len() - 1 {
       1 if args[1] == "ls" => list_entries(),
       1 if args[1] == "path" => data_file_path(),
