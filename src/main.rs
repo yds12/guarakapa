@@ -1,3 +1,4 @@
+use std::env;
 use guarakapa::{scanpw, crypto, fman, fs};
 use clap::{load_yaml, App};
 
@@ -147,8 +148,12 @@ fn list_entries() {
   }
 }
 
-fn data_file_path(){
+fn data_file_path() {
   println!("data file path: {}", fs::file_path());
+}
+
+fn show_version() {
+  println!("{}", env!("CARGO_PKG_VERSION"));
 }
 
 fn main() {
@@ -160,6 +165,9 @@ fn main() {
         data_file_path()
       },
       ("ls", Some(_)) =>{
+        list_entries()
+      },
+      ("version", Some(_)) =>{
         list_entries()
       },
       ("add", Some(add_arg)) => {
