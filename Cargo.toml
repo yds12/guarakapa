@@ -1,7 +1,7 @@
 [package]
 name = "guarakapa"
-version = "0.8.5"
 edition = "2021"
+version = "0.8.9"
 
 [[bin]]
 name = "kapa"
@@ -20,3 +20,4 @@ anyhow = "1"
 crossterm = "0.17"
 nix = "0.23.0"
 x11-clipboard = "0.5"
+clap ={ version = "2.33.3", features = ["yaml"] }

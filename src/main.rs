@@ -1,5 +1,6 @@
 use std::env;
 use guarakapa::{scanpw, crypto, fman, fs};
+use clap::{load_yaml, App};
 
 const MSG_ENTER_PW: &str = "Enter your master password: ";
 const MSG_SAVE_ERR: &str = "Failed to save file";
@@ -43,19 +44,6 @@ fn create_new_file() {
     println!("Your password file was created (at {}). \
              Run the program again to add new entries.", fs::file_path());
   }
-}
-
-fn print_usage(exec_name: &str) {
-  println!("First time usage:\n\n\t{exec}\n\n\
-    General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
-    Commands:\n\n\
-    \tentry_name\tretrieves the entry with name `entry_name`\n\
-    \tget entry_name\tretrieves the entry with name `entry_name`\n\
-    \tadd entry_name\tadds a new entry with name `entry_name`\n\
-    \trm entry_name\tremoves the entry with name `entry_name`\n\
-    \tls\t\tlists all entries\n\
-    \tpath\t\tshow path to data file",
-    exec = exec_name);
 }
 
 fn add_entry(entry_name: &str) {
@@ -169,26 +157,46 @@ fn show_version() {
 }
 
 fn main() {
-  let args: Vec<String> = env::args().collect();
-
-  if args.len() == 2
-    && vec!["version", "--version", "-v"].contains(&args[1].as_str()) {
-    show_version();
-  }
-  else if fs::file_exists() {
-    match args.len() - 1 {
-      1 if args[1] == "ls" => list_entries(),
-      1 if args[1] == "path" => data_file_path(),
-      1 => get_entry(&args[1]),
-      2 if args[1] == "add" => add_entry(&args[2]),
-      2 if args[1] == "get" => get_entry(&args[2]),
-      2 if args[1] == "rm" => remove_entry(&args[2]),
-      _ => print_usage(&args[0])
+    let yaml = load_yaml!("cli.yml");
+    let mut matches = App::from_yaml(yaml);
+  if fs::file_exists(){
+    match &matches.clone().get_matches().subcommand(){
+      ("path", Some(_)) =>{
+        data_file_path()
+      },
+      ("ls", Some(_)) =>{
+        list_entries()
+      },
+      ("version", Some(_)) =>{
+        list_entries()
+      },
+      ("add", Some(add_arg)) => {
+        match add_arg.value_of("entry_name") {
+          None => { matches.print_help().unwrap();}
+          Some(val) => {
+            add_entry(val);
+          }
+        }
+      },
+      ("rm", Some(add_arg)) => {
+        match add_arg.value_of("entry_name") {
+          None => { matches.print_help().unwrap();}
+          Some(val) => {
+            remove_entry(val);
+          }
+        }
+      },
+      ("get", Some(add_arg)) => {
+        match add_arg.value_of("entry_name") {
+          None => { matches.print_help().unwrap();}
+          Some(val) => {
+            get_entry(val);
+          }
+        }
+      },
+      _ => {}// clap handle invalid args
     }
-  } else if args.len() > 1 {
-    println!("Password file not found!\nIs this your first time usage?\n");
-    print_usage(&args[0]);
-  } else {
+  }else{
     create_new_file();
   }
 }
