@@ -1,0 +1,26 @@
+name: kapa
+version: "0.8.5"
+author: github.com/yds12
+about: A password manager for the Linux (X11) terminal written in Rust
+subcommands:
+  - add:
+      about: adds a new entry with name [entry_name]
+      args:
+        - entry_name:
+            index: 1
+  - path:
+      about: show path to data file
+  - ls:
+      about: lists all entries
+  - rm:
+      about: removes the entry with name [entry_name]
+      args:
+        - entry_name:
+            index: 1
+  - get:
+      about: retrieves the entry with name [entry_name]
+      args:
+        - entry_name:
+            index: 1
+  - version:
+      about: print kapa version
