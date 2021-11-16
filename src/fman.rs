@@ -108,7 +108,11 @@ impl File {
 }
 
 pub fn encode(file: &File) -> Result<Vec<u8>> {
-  let bytes = bincode::serialize(file)?;
+  let mut file_bytes = bincode::serialize(file)?;
+  let mut bytes = get_version_bytes();
+  bytes.append(&mut get_signature_bytes());
+  bytes.append(&mut file_bytes);
+
   Ok(bytes)
 }
 
