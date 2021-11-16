@@ -9,6 +9,7 @@ type IV = [u8; IV_LEN];
 
 const IV_LEN: usize = 16;
 const MSG_RAND_ERR: &str = "Internal error generating random number.";
+const VERSION_PARTS: usize = 3;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
@@ -112,8 +113,30 @@ pub fn encode(file: &File) -> Result<Vec<u8>> {
 }
 
 pub fn decode(content: &[u8]) -> Result<File> {
-  let file = bincode::deserialize(content)?;
+  let signature = get_signature_bytes();
+
+  let file = if has_signature(content, &signature) {
+    bincode::deserialize(&content[VERSION_PARTS + signature.len()..])?
+  } else { // for compatibility
+    bincode::deserialize(content)?
+  };
+
   Ok(file)
+}
+
+fn get_version_bytes() -> Vec<u8> {
+  let version = env!("CARGO_PKG_VERSION");
+  version.split(".").map(|v_str| v_str.parse::<u8>().unwrap()).collect()
+}
+
+fn get_signature_bytes() -> Vec<u8> {
+  vec![253, 7, 13, 147]
+}
+
+fn has_signature(file_contents: &[u8], signature: &[u8]) -> bool {
+  file_contents.len() > signature.len() + VERSION_PARTS &&
+    signature.iter().enumerate().fold(true, |acc, (i, &el)|
+      acc && el == file_contents[VERSION_PARTS + i])
 }
 
 impl File {
