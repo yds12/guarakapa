@@ -10,6 +10,7 @@ type IV = [u8; IV_LEN];
 const IV_LEN: usize = 16;
 const MSG_RAND_ERR: &str = "Internal error generating random number.";
 const VERSION_PARTS: usize = 3;
+const VERSION_SEP: char = '.';
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
@@ -130,7 +131,7 @@ pub fn decode(content: &[u8]) -> Result<File> {
 
 fn get_version_bytes() -> Vec<u8> {
   let version = env!("CARGO_PKG_VERSION");
-  version.split(".").map(|v_str| v_str.parse::<u8>().unwrap()).collect()
+  version.split(VERSION_SEP).map(|v_str| v_str.parse::<u8>().unwrap()).collect()
 }
 
 fn get_signature_bytes() -> Vec<u8> {
