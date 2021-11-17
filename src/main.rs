@@ -53,9 +53,12 @@ fn print_usage(exec_name: &str) {
     \tget entry_name\tretrieves the entry with name `entry_name`\n\
     \tadd entry_name\tadds a new entry with name `entry_name`\n\
     \trm entry_name\tremoves the entry with name `entry_name`\n\
+    \tcheck file_name\tchecks which version of {program} was used to create \
+    `file_name`\n\
     \tls\t\tlists all entries\n\
-    \tpath\t\tshow path to data file",
-    exec = exec_name);
+    \tpath\t\tshows the path to {program}'s data file",
+    exec = exec_name,
+    program = env!("CARGO_PKG_NAME"));
 }
 
 fn add_entry(entry_name: &str) {
@@ -160,7 +163,7 @@ fn list_entries() {
   }
 }
 
-fn data_file_path() {
+fn display_file_path() {
   println!("data file path: {}", fs::file_path());
 }
 
@@ -185,7 +188,7 @@ fn main() {
   else if fs::file_exists() {
     match args.len() - 1 {
       1 if args[1] == "ls" => list_entries(),
-      1 if args[1] == "path" => data_file_path(),
+      1 if args[1] == "path" => display_file_path(),
       1 => get_entry(&args[1]),
       2 if args[1] == "add" => add_entry(&args[2]),
       2 if args[1] == "get" => get_entry(&args[2]),
