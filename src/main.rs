@@ -168,6 +168,13 @@ fn show_version() {
   println!("{}", env!("CARGO_PKG_VERSION"));
 }
 
+fn check_file(file_path: &str) {
+  let contents = fs::load_from(file_path).expect(MSG_LOAD_ERR);
+  let version = fman::get_version(&contents);
+  println!("File {} created with {} version {}",
+    file_path, env!("CARGO_PKG_NAME"), version);
+}
+
 fn main() {
   let args: Vec<String> = env::args().collect();
 
@@ -183,6 +190,7 @@ fn main() {
       2 if args[1] == "add" => add_entry(&args[2]),
       2 if args[1] == "get" => get_entry(&args[2]),
       2 if args[1] == "rm" => remove_entry(&args[2]),
+      2 if args[1] == "check" => check_file(&args[2]),
       _ => print_usage(&args[0])
     }
   } else if args.len() > 1 {

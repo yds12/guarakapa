@@ -12,6 +12,9 @@ const MSG_RAND_ERR: &str = "Internal error generating random number.";
 const VERSION_PARTS: usize = 3;
 const VERSION_SEP: char = '.';
 
+/// Last version that did not track the program version in the data file
+const LAST_NONTRACKING_VERSION: &str = "0.8.5";
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
   pub pw_hash: PWHash,
@@ -127,6 +130,15 @@ pub fn decode(content: &[u8]) -> Result<File> {
   };
 
   Ok(file)
+}
+
+pub fn get_version(file_contents: &[u8]) -> String {
+  if has_signature(file_contents, &get_signature_bytes()[..]) {
+    file_contents[..3].iter().map(|byte|
+      byte.to_string()).collect::<Vec<String>>().join(".")
+  } else {
+    format!("<= {}", LAST_NONTRACKING_VERSION)
+  }
 }
 
 fn get_version_bytes() -> Vec<u8> {

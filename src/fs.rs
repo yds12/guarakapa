@@ -47,3 +47,8 @@ pub fn load() -> Result<Vec<u8>> {
   Ok(content)
 }
 
+pub fn load_from(path: &str) -> Result<Vec<u8>> {
+  let content = std::fs::read(path)?;
+  Ok(content)
+}
+
