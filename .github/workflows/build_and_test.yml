@@ -11,21 +11,25 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - name: install dependencies
       run: sudo apt install libxcb-shape0-dev libxcb-xfixes0-dev
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
-    - name: Build release
-      run: cargo build --verbose --release
     - name: Run unit tests
       run: cargo test --verbose --bins --lib
     - name: Run integration tests
       run: cargo test --verbose --test integration -- --test-threads=1
     - name: Run CLI tests
       run: cargo test --verbose --test cli -- --test-threads=1
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: install dependencies
+      run: sudo apt install libxcb-shape0-dev libxcb-xfixes0-dev
+    - uses: actions/checkout@v2
+    - name: Build release
+      run: cargo build --verbose --release
 
