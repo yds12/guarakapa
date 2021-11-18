@@ -23,5 +23,7 @@ jobs:
     - name: Run unit tests
       run: cargo test --verbose --bins --lib
     - name: Run integration tests
-      run: cargo test --verbose --test '*' -- --test-threads=1
+      run: cargo test --verbose --test integration -- --test-threads=1
+    - name: Run CLI tests
+      run: cargo test --verbose --test cli -- --test-threads=1
 
