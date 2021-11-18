@@ -1,5 +1,5 @@
 use std::env;
-use guarakapa::{scanpw, crypto, fman, fs};
+use guarakapa::{crypto, fman, fs};
 
 const MSG_ENTER_PW: &str = "Enter your master password: ";
 const MSG_SAVE_ERR: &str = "Failed to save file";
@@ -10,6 +10,27 @@ const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
 macro_rules! msg_enter_field {
   () => { "Enter {} for this entry (or just press ENTER to leave it blank):" }
+}
+
+fn get_input_pw(prompt: &str) -> String {
+  use termion::input::TermRead;
+  use std::io::Write;
+
+  let stdout = std::io::stdout();
+  let mut stdout = stdout.lock();
+  let stdin = std::io::stdin();
+  let mut stdin = stdin.lock();
+
+  stdout.write_all(prompt.as_bytes()).unwrap();
+  stdout.flush().unwrap();
+
+  let pass = stdin.read_passwd(&mut stdout);
+
+  if let Ok(Some(pass)) = pass {
+    return pass;
+  } else {
+    panic!("Failed to read input!");
+  }
 }
 
 fn get_input() -> String {
@@ -29,9 +50,9 @@ fn copy_to_clipboard_and_block(text: String) {
 }
 
 fn create_new_file() {
-  let pw = scanpw!("Enter a new master password: ");
+  let pw = get_input_pw("Enter a new master password: ");
   println!();
-  let confirm = scanpw!("Please repeat: ");
+  let confirm = get_input_pw("Please repeat: ");
   println!();
 
   if pw != confirm {
@@ -65,7 +86,7 @@ fn add_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(MSG_ENTER_PW);
+  let pw = get_input_pw(MSG_ENTER_PW);
   println!();
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
@@ -87,7 +108,7 @@ fn add_entry(entry_name: &str) {
   println!(msg_enter_field!(), "other notes/observations");
   let entry_notes = get_input();
 
-  let entry_pw = scanpw!("Enter a new password for this entry: ");
+  let entry_pw = get_input_pw("Enter a new password for this entry: ");
   println!();
 
   let entry = fman::OpenEntry {
@@ -111,7 +132,7 @@ fn get_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(MSG_ENTER_PW);
+  let pw = get_input_pw(MSG_ENTER_PW);
   println!();
 
   match file.get_entry(pw, entry_name) {
@@ -131,7 +152,7 @@ fn remove_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(MSG_ENTER_PW);
+  let pw = get_input_pw(MSG_ENTER_PW);
   println!();
 
   let pw_hash = crypto::hash(vec![pw.as_bytes(), &file.head.salt[..]]);
@@ -154,7 +175,7 @@ fn list_entries() {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
-  let pw = scanpw!(MSG_ENTER_PW);
+  let pw = get_input_pw(MSG_ENTER_PW);
   println!();
 
   match file.list(pw) {
