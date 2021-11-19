@@ -65,7 +65,7 @@ fn create_new_file() {
   }
 }
 
-fn print_usage(exec_name: &str) {
+fn show_help(exec_name: &str) {
   println!("First time usage:\n\n\t{exec}\n\n\
     General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
     Commands:\n\n\
@@ -201,26 +201,24 @@ fn check_file(file_path: &str) {
 fn main() {
   let args: Vec<String> = env::args().collect();
 
-  if args.len() == 2
-    && vec!["version", "--version", "-v"].contains(&args[1].as_str()) {
-    show_version();
-  }
-  else if fs::file_exists() {
-    match args.len() - 1 {
-      1 if args[1] == "ls" => list_entries(),
-      1 if args[1] == "path" => display_file_path(),
-      1 => get_entry(&args[1]),
-      2 if args[1] == "add" => add_entry(&args[2]),
-      2 if args[1] == "get" => get_entry(&args[2]),
-      2 if args[1] == "rm" => remove_entry(&args[2]),
-      2 if args[1] == "check" => check_file(&args[2]),
-      _ => print_usage(&args[0])
-    }
-  } else if args.len() > 1 {
-    println!("Password file not found!\nIs this your first time usage?\n");
-    print_usage(&args[0]);
-  } else {
-    create_new_file();
+  match (fs::file_exists(), args.len() - 1) {
+    (_, 1) if vec!["version", "--version", "-v"].contains(&args[1].as_str())
+      => show_version(),
+    (_, 1) if vec!["--help", "-h"].contains(&args[1].as_str())
+      => show_help(&args[0]),
+    (true, 1) if args[1] == "ls" => list_entries(),
+    (true, 1) if args[1] == "path" => display_file_path(),
+    (true, 1) => get_entry(&args[1]),
+    (true, 2) if args[1] == "add" => add_entry(&args[2]),
+    (true, 2) if args[1] == "get" => get_entry(&args[2]),
+    (true, 2) if args[1] == "rm" => remove_entry(&args[2]),
+    (true, 2) if args[1] == "check" => check_file(&args[2]),
+    (true, _) => show_help(&args[0]),
+    (false, n) if n > 0 => {
+      println!("Password file not found!\nIs this your first time usage?\n");
+      show_help(&args[0]);
+    },
+    _ => create_new_file()
   }
 }
 
