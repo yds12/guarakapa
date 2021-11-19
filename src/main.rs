@@ -65,22 +65,6 @@ fn create_new_file() {
   }
 }
 
-fn show_help(exec_name: &str) {
-  println!("First time usage:\n\n\t{exec}\n\n\
-    General usage:\n\n\t{exec} [COMMAND] [PARAMS]\n\n\
-    Commands:\n\n\
-    \tentry_name\tretrieves the entry with name `entry_name`\n\
-    \tget entry_name\tretrieves the entry with name `entry_name`\n\
-    \tadd entry_name\tadds a new entry with name `entry_name`\n\
-    \trm entry_name\tremoves the entry with name `entry_name`\n\
-    \tcheck file_name\tchecks which version of {program} was used to create \
-    `file_name`\n\
-    \tls\t\tlists all entries\n\
-    \tpath\t\tshows the path to {program}'s data file",
-    exec = exec_name,
-    program = env!("CARGO_PKG_NAME"));
-}
-
 fn add_entry(entry_name: &str) {
   let contents = fs::load().expect(MSG_LOAD_ERR);
   let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
@@ -191,7 +175,7 @@ fn list_entries() {
   }
 }
 
-fn display_file_path() {
+fn show_file_path() {
   println!("data file path: {}", fs::file_path());
 }
 
@@ -206,6 +190,26 @@ fn check_file(file_path: &str) {
     file_path, env!("CARGO_PKG_NAME"), version);
 }
 
+fn show_help(exec_name: &str) {
+  println!("First time usage: {exec}\n\
+    General usage: {exec} [OPTION] [COMMAND] [PARAMS]\n\n\
+    Commands:\n  \
+      ENTRY\t\tRetrieve the entry with name `ENTRY`\n  \
+      get ENTRY\tRetrieve the entry with name `ENTRY`\n  \
+      add ENTRY\tAdd a new entry with name `ENTRY`\n  \
+      rm ENTRY\tRemove the entry with name `ENTRY`\n  \
+      check FILE\tShow the version of {program} used to create file in path \
+    `FILE`\n  \
+      ls\t\tList all entries\n  \
+      path\t\tShow the path to {program}'s data file\n  \
+      version\tShow the program version\n\n\
+    Options:\n  \
+      -h, --help\tShow the help text\n  \
+      -v, --version\tShow the program version",
+    exec = exec_name,
+    program = env!("CARGO_PKG_NAME"));
+}
+
 fn main() {
   let args: Vec<String> = env::args().collect();
 
@@ -215,7 +219,7 @@ fn main() {
     (_, 1) if vec!["--help", "-h"].contains(&args[1].as_str())
       => show_help(&args[0]),
     (true, 1) if args[1] == "ls" => list_entries(),
-    (true, 1) if args[1] == "path" => display_file_path(),
+    (true, 1) if args[1] == "path" => show_file_path(),
     (true, 1) => get_entry(&args[1]),
     (true, 2) if args[1] == "add" => add_entry(&args[2]),
     (true, 2) if args[1] == "get" => get_entry(&args[2]),
