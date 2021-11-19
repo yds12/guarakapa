@@ -7,7 +7,7 @@ const FILENAME: &str = "gk.dat";
 #[cfg(not(debug_assertions))]
 fn data_dir() -> PathBuf {
   let home = std::env::var("HOME").unwrap();
-  Path::new(&home).join(".config").join("guarakapa")
+  Path::new(&home).join(".config").join(env!("CARGO_PKG_NAME"))
 }
 
 // for debug and tests
