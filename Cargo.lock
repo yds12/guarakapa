@@ -130,7 +130,7 @@ checksum = "78cc372d058dcf6d5ecd98510e7fbc9e5aec4d21de70f65fea8fecebcd881bd4"
 
 [[package]]
 name = "guarakapa"
-version = "0.9.2"
+version = "0.9.3"
 dependencies = [
  "anyhow",
  "bincode",
