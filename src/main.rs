@@ -39,13 +39,12 @@ fn get_input() -> String {
   s.trim_end().to_owned()
 }
 
+/// When this function returns, clipboard is dropped and its contents too
 fn copy_to_clipboard_and_block(text: String) {
   let clipboard = x11_clipboard::Clipboard::new().unwrap();
   clipboard.store(clipboard.setter.atoms.clipboard,
     clipboard.setter.atoms.utf8_string, text).unwrap();
 
-  // TODO: find out why this has to be here, calling it after this fn does
-  // not work.
   get_input();
 }
 
