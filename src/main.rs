@@ -179,10 +179,11 @@ fn list_entries() {
 
   match file.list(pw) {
     Err(e) => println!("Error retrieving entries: {}", e),
-    Ok(entries) => {
+    Ok(mut entries) => {
       if entries.len() > 0 {
-      println!("Total entries ({}):\n  {}", entries.len(),
-        entries.join("\n  "));
+        entries.sort();
+        println!("Total entries ({}):\n  {}", entries.len(),
+          entries.join("\n  "));
       } else {
         println!("There are no entries yet.");
       }
