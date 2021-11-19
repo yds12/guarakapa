@@ -60,3 +60,13 @@ fn can_create_data_file() {
   delete_file();
 }
 
+#[test]
+fn reports_file_missing() {
+  let opts = vec!["ls", "add myentry", "rm myentry", "entry"];
+
+  for opt in opts {
+    let mut p = spawn(&format!("{} {}", EXE, opt), Some(1_000)).unwrap();
+    p.exp_regex("not found").unwrap();
+  }
+}
+
