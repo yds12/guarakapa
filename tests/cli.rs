@@ -86,16 +86,8 @@ fn reports_file_missing() {
 
 #[test]
 fn can_create_data_file() {
-  create_file();
-  ensure_file_is_deleted();
-}
-
-#[test]
-fn can_show_path_to_file() {
   ensure_file_is_deleted();
   create_file();
-  let mut p = spawn(&format!("{} {}", EXE, "path"), Some(1_000)).unwrap();
-  p.exp_regex(&get_file_path()).unwrap_or_fail();
   ensure_file_is_deleted();
 }
 
@@ -109,5 +101,34 @@ fn cannot_create_file_without_confirming_pw() {
   p.send_line(WRONG_PW).unwrap();
   p.exp_regex("incorrect").unwrap();
   assert!(!file_exists());
+}
+
+#[test]
+fn can_show_path_to_file() {
+  ensure_file_is_deleted();
+  create_file();
+  let mut p = spawn(&format!("{} {}", EXE, "path"), Some(1_000)).unwrap();
+  p.exp_regex(&get_file_path()).unwrap_or_fail();
+  ensure_file_is_deleted();
+}
+
+#[test]
+fn displays_pw_error_for_listing() {
+  ensure_file_is_deleted();
+  create_file();
+  let mut p = spawn(&format!("{} {}", EXE, "ls"), Some(1_000)).unwrap();
+  p.send_line(WRONG_PW).unwrap();
+  p.exp_regex("Error retrieving entries").unwrap();
+  ensure_file_is_deleted();
+}
+
+#[test]
+fn can_list_zero_entries() {
+  ensure_file_is_deleted();
+  create_file();
+  let mut p = spawn(&format!("{} {}", EXE, "ls"), Some(1_000)).unwrap();
+  p.send_line(TEST_PW).unwrap();
+  p.exp_regex("no entries yet").unwrap();
+  ensure_file_is_deleted();
 }
 
