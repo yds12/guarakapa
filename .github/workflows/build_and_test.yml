@@ -13,8 +13,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: update apt
+      run: sudo apt update
     - name: install dependencies
-      run: sudo apt install libxcb-shape0-dev libxcb-xfixes0-dev
+      run: sudo apt install libxcb-shape0-dev libxcb-xfixes0-dev xvfb
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
@@ -23,7 +25,7 @@ jobs:
     - name: Run integration tests
       run: cargo test --verbose --test integration -- --test-threads=1
     - name: Run CLI tests
-      run: cargo test --verbose --test cli -- --test-threads=1
+      run: xvfb-run --auto-servernum cargo test --verbose --test cli -- --test-threads=1
   build-release:
     runs-on: ubuntu-latest
     steps:
