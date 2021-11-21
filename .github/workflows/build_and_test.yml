@@ -34,32 +34,4 @@ jobs:
       run: cargo build --verbose --release
     - name: Release size
       run: ls -Fl target/release/ | grep "\*"
-  build-fedora:
-    runs-on: fedora
-    steps:
-    - name: install dependencies
-      run: sudo dnf install libxcb-devel
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run unit tests
-      run: cargo test --verbose --bins --lib
-    - name: Run integration tests
-      run: cargo test --verbose --test integration -- --test-threads=1
-    - name: Run CLI tests
-      run: cargo test --verbose --test cli -- --test-threads=1
-  build-arch:
-    runs-on: archlinux
-    steps:
-    - name: install dependencies
-      run: sudo pacman -S libxcb-git
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run unit tests
-      run: cargo test --verbose --bins --lib
-    - name: Run integration tests
-      run: cargo test --verbose --test integration -- --test-threads=1
-    - name: Run CLI tests
-      run: cargo test --verbose --test cli -- --test-threads=1
 
