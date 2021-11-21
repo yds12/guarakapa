@@ -3,7 +3,7 @@ use rexpect::{spawn, process::wait::WaitStatus};
 const TIMEOUT: u64 = 1_000;
 const OTHER_FILE_PATH: &str = "./gk-test-env.dat";
 const EXE: &str = env!("CARGO_BIN_EXE_kapa");
-const PATH_ENV: &str = "GUARAKAPA_DATA_PATH";
+const PATH_ENV: &str = "GUARAKAPA_FILE_PATH";
 const TEST_PW: &str = "test-password";
 const WRONG_PW: &str = "not-the-password";
 
@@ -17,6 +17,7 @@ macro_rules! test_fn {
 
       #[test]
       fn main_test_fn() {
+        std::env::remove_var(PATH_ENV);
         ensure_file_is_deleted();
         $($code)*
         ensure_file_is_deleted();
@@ -28,6 +29,7 @@ macro_rules! test_fn {
         ensure_file_is_deleted();
         $($code)*
         ensure_file_is_deleted();
+        std::env::remove_var(PATH_ENV);
       }
     }
   }
@@ -67,8 +69,16 @@ fn ensure_file_is_deleted() {
   assert!(!file_exists());
 }
 
+fn execute(params: Vec<&str>) -> rexpect::session::PtySession {
+  if params.len() > 0 {
+    spawn(&format!("{} {}", EXE, params.join(" ")), Some(TIMEOUT)).unwrap()
+  } else {
+    spawn(EXE, Some(TIMEOUT)).unwrap()
+  }
+}
+
 fn create_file() {
-  let mut p = spawn(EXE, Some(TIMEOUT)).unwrap();
+  let mut p = execute(Vec::new());
   p.exp_regex("password").unwrap();
   p.send_line(TEST_PW).unwrap();
   p.exp_regex("repeat").unwrap();
@@ -78,25 +88,24 @@ fn create_file() {
 }
 
 fn add_entry(name: &str) {
-  let mut p = spawn(&format!("{} {} {}", EXE, "add", name), Some(TIMEOUT)).unwrap();
+  let mut p = execute(vec!["add", name]);
   p.exp_regex("password").unwrap();
   p.send_line(TEST_PW).unwrap();
-  p.exp_regex("description").unwrap();
-  p.send_line("some desc").unwrap();
-  p.exp_regex("user name").unwrap();
-  p.send_line("some name").unwrap();
-  p.exp_regex("email").unwrap();
-  p.send_line("some email").unwrap();
-  p.exp_regex("observations").unwrap();
-  p.send_line("some obs").unwrap();
-  p.exp_regex("new password").unwrap();
-  p.send_line("some pw").unwrap();
+
+  let expected_fields = ["description", "user name", "email", "observations",
+    "new password"];
+
+  for field in expected_fields {
+    p.exp_regex(field).unwrap();
+    p.send_line(&format!("some {}", field)).unwrap();
+  }
+
   p.exp_regex("added").unwrap();
 }
 
 #[test]
 fn can_execute() {
-  let p = spawn(&format!("{} {}", EXE, "-v"), Some(TIMEOUT)).unwrap();
+  let p = execute(vec!["-v"]);
   match p.process.wait() {
     Ok(WaitStatus::Exited(_, 0)) => (),
     _ => panic!("process exited with non-zero status")
@@ -105,25 +114,46 @@ fn can_execute() {
 
 #[test]
 fn can_display_help_text() {
-  let mut p = spawn(&format!("{} {}", EXE, "--help"), Some(TIMEOUT)).unwrap();
-  p.exp_string("usage").unwrap();
+  let args = vec!["-h", "--help"];
+
+  for arg in args {
+    let mut p = execute(vec![arg]);
+    p.exp_string("usage").unwrap();
+  }
 }
 
 #[test]
 fn can_display_version() {
-  let version_opts = vec!["-v", "--version", "version"];
+  let args = vec!["-v", "--version", "version"];
 
-  for version in version_opts {
-    let mut p = spawn(&format!("{} {}", EXE, version), Some(TIMEOUT)).unwrap();
+  for arg in args {
+    let mut p = execute(vec![arg]);
     p.exp_string(env!("CARGO_PKG_VERSION")).unwrap();
   }
 }
 
-test_fn! { reports_file_missing,
-  let opts = vec!["ls", "add myentry", "rm myentry", "entry"];
+#[test]
+fn env_var_works() {
+  std::env::set_var(PATH_ENV, OTHER_FILE_PATH);
+  assert!(!std::path::Path::new(OTHER_FILE_PATH).exists());
+  create_file();
+  assert!(std::path::Path::new(OTHER_FILE_PATH).exists());
+}
 
-  for opt in opts {
-    let mut p = spawn(&format!("{} {}", EXE, opt), Some(TIMEOUT)).unwrap();
+#[test]
+fn not_using_env_var_works() {
+  ensure_file_is_deleted();
+  std::env::remove_var(PATH_ENV);
+  create_file();
+  assert!(!std::path::Path::new(OTHER_FILE_PATH).exists());
+  ensure_file_is_deleted();
+}
+
+test_fn! { reports_file_missing,
+  let args = vec!["ls", "add myentry", "rm myentry", "entry"];
+
+  for arg in args {
+    let mut p = execute(vec![arg]);
     p.exp_regex("not found").unwrap();
   }
 }
@@ -133,7 +163,7 @@ test_fn! { can_create_data_file,
 }
 
 test_fn! { cannot_create_file_without_confirming_pw,
-  let mut p = spawn(EXE, Some(TIMEOUT)).unwrap();
+  let mut p = execute(Vec::new());
   p.exp_regex("password").unwrap();
   p.send_line(TEST_PW).unwrap();
   p.exp_regex("repeat").unwrap();
@@ -144,20 +174,20 @@ test_fn! { cannot_create_file_without_confirming_pw,
 
 test_fn! { can_show_path_to_file,
   create_file();
-  let mut p = spawn(&format!("{} {}", EXE, "path"), Some(TIMEOUT)).unwrap();
+  let mut p = execute(vec!["path"]);
   p.exp_regex(&get_file_path()).unwrap_or_fail();
 }
 
 test_fn! { displays_pw_error_for_listing,
   create_file();
-  let mut p = spawn(&format!("{} {}", EXE, "ls"), Some(TIMEOUT)).unwrap();
+  let mut p = execute(vec!["ls"]);
   p.send_line(WRONG_PW).unwrap();
-  p.exp_regex("Error retrieving entries").unwrap();
+  p.exp_regex("Error retrieving entries").unwrap_or_fail();
 }
 
 test_fn! { can_list_zero_entries,
   create_file();
-  let mut p = spawn(&format!("{} {}", EXE, "ls"), Some(TIMEOUT)).unwrap();
+  let mut p = execute(vec!["ls"]);
   p.send_line(TEST_PW).unwrap();
   p.exp_regex("no entries yet").unwrap();
 }
@@ -176,7 +206,7 @@ test_fn! { can_add_two_entries,
 test_fn! { can_list_one_entry,
   create_file();
   add_entry("entry1");
-  let mut p = spawn(&format!("{} {}", EXE, "ls"), Some(TIMEOUT)).unwrap();
+  let mut p = execute(vec!["ls"]);
   p.send_line(TEST_PW).unwrap();
   p.exp_regex("entry1").unwrap();
 }
@@ -185,7 +215,7 @@ test_fn! { can_list_two_entries,
   create_file();
   add_entry("entry1");
   add_entry("entry2");
-  let mut p = spawn(&format!("{} {}", EXE, "ls"), Some(TIMEOUT)).unwrap();
+  let mut p = execute(vec!["ls"]);
   p.send_line(TEST_PW).unwrap();
   p.exp_regex("entry1").unwrap();
   p.exp_regex("entry2").unwrap();
