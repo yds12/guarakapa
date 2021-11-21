@@ -4,7 +4,8 @@ const TIMEOUT: u64 = 1_000;
 const OTHER_FILE_PATH: &str = "./gk-test-env.dat";
 const EXE: &str = env!("CARGO_BIN_EXE_kapa");
 const PATH_ENV: &str = "GUARAKAPA_FILE_PATH";
-const TEST_PW: &str = "test-password";
+const MASTER_PW: &str = "test-password";
+const ENTRY_PW: &str = "entry-test-password";
 const WRONG_PW: &str = "not-the-password";
 
 /// Call initialization and cleanup routines for test functions. Also,
@@ -80,9 +81,9 @@ fn execute(params: Vec<&str>) -> rexpect::session::PtySession {
 fn create_file() {
   let mut p = execute(Vec::new());
   p.exp_regex("password").unwrap();
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
   p.exp_regex("repeat").unwrap();
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
   p.exp_regex("created").unwrap();
   assert!(file_exists());
 }
@@ -90,15 +91,17 @@ fn create_file() {
 fn add_entry(name: &str) {
   let mut p = execute(vec!["add", name]);
   p.exp_regex("password").unwrap();
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
 
-  let expected_fields = ["description", "user name", "email", "observations",
-    "new password"];
+  let expected_fields = ["description", "user name", "email", "observations"];
 
   for field in expected_fields {
     p.exp_regex(field).unwrap();
     p.send_line(&format!("some {}", field)).unwrap();
   }
+
+  p.exp_regex("new password").unwrap();
+  p.send_line(ENTRY_PW).unwrap();
 
   p.exp_regex("added").unwrap();
 }
@@ -165,7 +168,7 @@ test_fn! { can_create_data_file,
 test_fn! { cannot_create_file_without_confirming_pw,
   let mut p = execute(Vec::new());
   p.exp_regex("password").unwrap();
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
   p.exp_regex("repeat").unwrap();
   p.send_line(WRONG_PW).unwrap();
   p.exp_regex("incorrect").unwrap();
@@ -188,7 +191,7 @@ test_fn! { displays_pw_error_for_listing,
 test_fn! { can_list_zero_entries,
   create_file();
   let mut p = execute(vec!["ls"]);
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
   p.exp_regex("no entries yet").unwrap();
 }
 
@@ -207,7 +210,7 @@ test_fn! { can_list_one_entry,
   create_file();
   add_entry("entry1");
   let mut p = execute(vec!["ls"]);
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
   p.exp_regex("entry1").unwrap();
 }
 
@@ -216,8 +219,46 @@ test_fn! { can_list_two_entries,
   add_entry("entry1");
   add_entry("entry2");
   let mut p = execute(vec!["ls"]);
-  p.send_line(TEST_PW).unwrap();
+  p.send_line(MASTER_PW).unwrap();
   p.exp_regex("entry1").unwrap();
   p.exp_regex("entry2").unwrap();
+}
+
+test_fn! { can_retrieve_entry,
+  create_file();
+  add_entry("entry1");
+  let mut p = execute(vec!["entry1"]);
+  p.send_line(MASTER_PW).unwrap();
+  p.exp_regex("entry1").unwrap();
+  p.exp_regex("retrieved").unwrap();
+}
+
+test_fn! { reports_entry_not_found,
+  create_file();
+  add_entry("entry1");
+  let mut p = execute(vec!["entry2"]);
+  p.send_line(MASTER_PW).unwrap();
+  p.exp_regex("entry2").unwrap();
+  p.exp_regex("not found").unwrap();
+}
+
+test_fn! { can_retrieve_entry_pw,
+  create_file();
+  add_entry("entry1");
+  let mut p = execute(vec!["entry1"]);
+  p.send_line(MASTER_PW).unwrap();
+  p.exp_regex("entry1").unwrap();
+  p.exp_regex("retrieved").unwrap();
+
+  let clipboard = x11_clipboard::Clipboard::new().unwrap();
+  let content = clipboard.load(
+    clipboard.getter.atoms.clipboard,
+    clipboard.setter.atoms.utf8_string,
+    clipboard.setter.atoms.property,
+    std::time::Duration::from_secs(3)
+  );
+
+  let content_str = String::from_utf8(content.unwrap()).unwrap();
+  assert_eq!(content_str, ENTRY_PW);
 }
 

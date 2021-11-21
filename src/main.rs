@@ -121,7 +121,7 @@ fn get_entry(entry_name: &str) {
   match file.get_entry(pw, entry_name) {
     Err(e) => println!("Error retrieving entry. Reason: {}", e),
     Ok(Some(entry)) => {
-      println!("\nEntry `{}` recovered.\n{}\
+      println!("\nEntry `{}` retrieved.\n{}\
         Password: ******   [copied to clipboard, paste to use].\n\n\
         Press ENTER to close the program (clipboard may be erased).",
         entry_name, entry);
