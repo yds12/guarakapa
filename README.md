@@ -32,24 +32,43 @@ all manipulate the same data file.
 
 # About
 
+This project started with the purpose of learning Rust, how to use its testing
+tools, and the basics of cryptography.
+
+It is a command line program for Linux that enables you to save your passwords
+and retrieve them (using a master password) directly via the clipboard.
+
+The core design principles are:
+
+* **Minimalism:** keep the source code, number of dependencies, binary size and
+compilation time as small as possible;
+
+* **Security:** use standard highly-secure cryptography algorithms, only decrypt
+what is necessary at a given moment, keep track of the version used to create
+the password file, extensive use of tests;
+
+* **Usability:** we strive to make it as easy as possible to use in a terminal.
+
 We took some inspiration from
-[rooster](https://github.com/conradkleinespel/rooster), which is at about 4k
-lines of code. We want our password manager to stay well below that. For that
-we will opt for a minimal design, including only basic features.
+[rooster](https://github.com/conradkleinespel/rooster).
 
 ## Features
 
 * Entries have an entry name, a description, a username, an email, other notes,
 and a password as fields;
-* List entries;
-* Add new entry (user is prompted about the entry fields);
-* Retrieve entry (user types the entry name, a search is performed and results
-shown, password is stored in the clipboard);
-* Passwords should not be visible when user is typing.
+* List entries: only entry names are decrypted, not the entries themselves;
+* Add new entry: user is prompted about the entry fields;
+* Retrieve entry: user types the entry name, the selected entry is shown,
+password is stored in the clipboard;
+* Passwords should not be visible when user is typing;
+* Find your password file;
+* Find which version of the program was used to create your password file, so
+that in case there is a breaking change you can still recover it with an older
+version.
 
 ## Commands and Usage
 
-The main commands are:
+The basic commands are:
 
     $ kapa                   # creates a new data file, or, if it already
                              # exists, displays the help text
@@ -57,10 +76,14 @@ The main commands are:
     $ kapa ls                # lists entry names
     $ kapa <entry_name>      # gets entry with specified name
     $ kapa add <entry_name>  # adds entry with specified name
-    $ kapa rm <entry_name>   # removes entry with specified name
 
-Backups can be done by copying the password file. We might implement an export
-function to export everything unencrypted to a JSON, TOML or YAML file.
+Learn more about all the commands and options with:
+
+    $ kapa --help
+
+Backups can be done by copying the password file (find it with `kapa path`).
+We might implement an export function to export everything unencrypted to a
+JSON, TOML or YAML file.
 
 # Cryptography
 
