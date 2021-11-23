@@ -194,8 +194,7 @@ fn show_help(exec_name: &str) {
   println!("First time usage: {exec}\n\
     General usage: {exec} [OPTION] [COMMAND] [PARAMS]\n\n\
     Commands:\n  \
-      ENTRY\t\tRetrieve the entry with name `ENTRY`\n  \
-      get ENTRY\tRetrieve the entry with name `ENTRY`\n  \
+      [get] ENTRY\tRetrieve the entry with name `ENTRY`\n  \
       add ENTRY\tAdd a new entry with name `ENTRY`\n  \
       rm ENTRY\tRemove the entry with name `ENTRY`\n  \
       check FILE\tShow the version of {program} used to create file in path \
