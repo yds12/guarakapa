@@ -8,10 +8,6 @@ const MSG_WRONG_PW: &str = "Password does not match!";
 const MSG_ENCODE_ERR: &str = "Failed to encode file.";
 const MSG_DECODE_ERR: &str = "Failed to decode file.";
 
-macro_rules! msg_enter_field {
-  () => { "Enter {} for this entry (or just press ENTER to leave it blank):" }
-}
-
 fn get_input_pw(prompt: &str) -> String {
   use termion::input::TermRead;
   use std::io::Write;
@@ -48,6 +44,13 @@ fn copy_to_clipboard_and_block(text: String) {
   get_input();
 }
 
+fn get_input_field(fieldname: &str) -> String {
+  println!("Enter {} for this entry (or just press ENTER to leave it blank):",
+    fieldname);
+
+  return get_input();
+}
+
 fn create_new_file() {
   let pw = get_input_pw("Enter a new master password: ");
   println!();
@@ -79,36 +82,22 @@ fn add_entry(entry_name: &str) {
     return;
   }
 
-  println!(msg_enter_field!(), "a description");
-  let entry_desc = get_input();
-
-  println!(msg_enter_field!(), "a user name");
-  let entry_user = get_input();
-
-  println!(msg_enter_field!(), "an email");
-  let entry_email = get_input();
-
-  println!(msg_enter_field!(), "other notes/observations");
-  let entry_notes = get_input();
-
-  let entry_pw = get_input_pw("Enter a new password for this entry: ");
-  println!();
-
   let entry = fman::OpenEntry {
-    desc: entry_desc,
-    user: entry_user,
-    email: entry_email,
-    notes: entry_notes,
-    pw: entry_pw
+    desc: get_input_field("a description"),
+    user: get_input_field("a user name"),
+    email: get_input_field("an email"),
+    notes: get_input_field("other notes/observations"),
+    pw: get_input_pw("Enter a new password for this entry: ")
   };
+
+  println!();
 
   if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry) {
     println!("Could not add entry. Reason: {}", e);
-    return;
+  } else {
+    fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
+    println!("Entry '{}' added successfully.", entry_name);
   }
-
-  fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
-  println!("Entry '{}' added successfully.", entry_name);
 }
 
 fn get_entry(entry_name: &str) {
