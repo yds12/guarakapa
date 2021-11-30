@@ -213,22 +213,19 @@ impl File {
     let metadata = crypto::decrypt(self.metadata.content.as_slice(),
       &self.metadata.iv[..], &key[..])?;
 
-    let mut meta_content: Vec<String> =
+    let mut entry_names: Vec<String> =
       bincode::deserialize(metadata.as_slice())?;
 
-    let mut index = None;
-    for (i, meta_entry) in meta_content.iter().enumerate() {
-      if meta_entry == name {
-        index = Some(i);
-        break;
-      }
-    }
+    let index = entry_names.iter()
+      .enumerate()
+      .filter_map(|(i, entry_name)| if entry_name == &name { Some(i) } else { None })
+      .next();
 
     if let Some(i) = index {
       self.entries.remove(i);
-      meta_content.remove(i);
+      entry_names.remove(i);
 
-      let meta_content = bincode::serialize(&meta_content)?;
+      let meta_content = bincode::serialize(&entry_names)?;
 
       let iv: IV = crypto::generate_bytes(IV_LEN)
         .try_into()

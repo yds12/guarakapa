@@ -106,6 +106,21 @@ fn add_entry(name: &str) {
   p.exp_regex("added").unwrap();
 }
 
+fn remove_entry(name: &str) {
+  let mut p = execute(vec!["rm", name]);
+  p.exp_regex("password").unwrap();
+  p.send_line(MASTER_PW).unwrap();
+  p.exp_regex(name).unwrap();
+  p.exp_regex("removed").unwrap();
+}
+
+fn retrieve_entry(name: &str) {
+  let mut p = execute(vec![name]);
+  p.send_line(MASTER_PW).unwrap();
+  p.exp_regex(name).unwrap();
+  p.exp_regex("retrieved").unwrap();
+}
+
 #[test]
 fn can_execute() {
   let p = execute(vec!["-v"]);
@@ -227,10 +242,32 @@ test_fn! { can_list_two_entries,
 test_fn! { can_retrieve_entry,
   create_file();
   add_entry("entry1");
-  let mut p = execute(vec!["entry1"]);
-  p.send_line(MASTER_PW).unwrap();
-  p.exp_regex("entry1").unwrap();
-  p.exp_regex("retrieved").unwrap();
+  retrieve_entry("entry1");
+}
+
+test_fn! { can_remove_entry,
+  create_file();
+  add_entry("entry1");
+  remove_entry("entry1");
+}
+
+test_fn! { removing_entry_doesnt_affect_others,
+  create_file();
+
+  for i in 0..10 {
+    add_entry(&format!("entry{}", i));
+  }
+
+  remove_entry("entry3");
+  remove_entry("entry7");
+
+  for i in 0..10 {
+    if [3, 7].contains(&i) {
+      continue;
+    }
+
+    retrieve_entry(&format!("entry{}", i));
+  }
 }
 
 test_fn! { reports_entry_not_found,
