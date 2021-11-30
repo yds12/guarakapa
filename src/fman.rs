@@ -180,6 +180,7 @@ impl File {
       .map_err(|_| anyhow!(MSG_RAND_ERR))?;
 
     let content = bincode::serialize(&entry)?;
+
     let encrypted_content = crypto::encrypt(
       content.as_slice(), &iv[..], &key[..])?;
 
@@ -189,7 +190,6 @@ impl File {
     };
 
     self.entries.push(entry);
-
     meta_content.push(name);
 
     let meta_content = bincode::serialize(&meta_content)?;
@@ -200,6 +200,7 @@ impl File {
 
     let encrypted_content = crypto::encrypt(
       meta_content.as_slice(), &iv[..], &key[..])?;
+
     self.metadata.content = encrypted_content;
     self.metadata.iv = iv;
 

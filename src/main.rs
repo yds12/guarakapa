@@ -48,7 +48,7 @@ fn get_input_field(fieldname: &str) -> String {
   println!("Enter {} for this entry (or just press ENTER to leave it blank):",
     fieldname);
 
-  return get_input();
+  get_input()
 }
 
 fn create_new_file() {
@@ -153,7 +153,7 @@ fn list_entries() {
   match file.list(pw) {
     Err(e) => println!("Error retrieving entries: {}", e),
     Ok(mut entries) => {
-      if entries.len() > 0 {
+      if !entries.is_empty() {
         entries.sort();
         println!("Total entries ({}):\n  {}", entries.len(),
           entries.join("\n  "));
