@@ -36,7 +36,8 @@ macro_rules! test_fn {
   }
 }
 
-/// Enables an easy cleanup in case an unwrap fails
+/// Enables an easy cleanup in case an unwrap fails.
+/// This will not be needed once the `try` blocks are stabilized in Rust
 trait Finally<T> {
   fn unwrap_or_fail(self) -> T;
 }
