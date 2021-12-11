@@ -3,7 +3,6 @@ name = "guarakapa"
 version = "0.9.9"
 edition = "2021"
 description = "A password manager for the terminal"
-license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 homepage = "https://github.com/yds12/guarakapa"
@@ -28,3 +27,8 @@ termion = "1.5"
 
 [dev-dependencies]
 rexpect = "0.4"
+
+[package.metadata.deb]
+maintainer = "guarakapa developers"
+copyright = "2021, guarakapa developers"
+depends = "$auto"
