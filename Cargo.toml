@@ -2,6 +2,12 @@
 name = "guarakapa"
 version = "0.9.9"
 edition = "2021"
+description = "A password manager for the terminal"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+homepage = "https://github.com/yds12/guarakapa"
+repository = "https://github.com/yds12/guarakapa"
 
 [[bin]]
 name = "kapa"
