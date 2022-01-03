@@ -218,7 +218,7 @@ impl File {
 
     let index = entry_names.iter()
       .enumerate()
-      .filter_map(|(i, entry_name)| if entry_name == &name { Some(i) } else { None })
+      .filter_map(|(i, entry_name)| if entry_name == name { Some(i) } else { None })
       .next();
 
     if let Some(i) = index {
