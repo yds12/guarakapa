@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use std::convert::TryInto;
-use anyhow::{Result, anyhow, bail};
 use crate::crypto;
+use anyhow::{anyhow, bail, Result};
+use serde::{Deserialize, Serialize};
+use std::convert::TryInto;
 
 type PWHash = [u8; 32];
 type PWSalt = [u8; 16];
@@ -17,309 +17,319 @@ const LAST_NONTRACKING_VERSION: &str = "0.8.5";
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Head {
-  pub pw_hash: PWHash,
-  pub salt: PWSalt
+    pub pw_hash: PWHash,
+    pub salt: PWSalt,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Metadata {
-  iv: IV,
-  content: Vec<u8>
+    iv: IV,
+    content: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Entry {
-  iv: IV,
-  content: Vec<u8>
+    iv: IV,
+    content: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct File {
-  pub head: Head,
-  metadata: Metadata,
-  entries: Vec<Entry>
+    pub head: Head,
+    metadata: Metadata,
+    entries: Vec<Entry>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct OpenEntry {
-  pub desc: String,
-  pub user: String,
-  pub email: String,
-  pub notes: String,
-  pub pw: String
+    pub desc: String,
+    pub user: String,
+    pub email: String,
+    pub notes: String,
+    pub pw: String,
 }
 
 impl OpenEntry {
-  fn is_empty(&self) -> bool {
-    self.desc.is_empty() && self.user.is_empty() && self.email.is_empty()
-      && self.notes.is_empty()
-  }
+    fn is_empty(&self) -> bool {
+        self.desc.is_empty()
+            && self.user.is_empty()
+            && self.email.is_empty()
+            && self.notes.is_empty()
+    }
 }
 
 impl std::fmt::Display for OpenEntry {
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    if self.is_empty() {
-      return write!(f, "---");
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.is_empty() {
+            return write!(f, "---");
+        }
+        if !self.desc.is_empty() {
+            writeln!(f, "Description: {}", self.desc)?;
+        }
+        if !self.user.is_empty() {
+            writeln!(f, "User name: {}", self.user)?;
+        }
+        if !self.email.is_empty() {
+            writeln!(f, "e-mail: {}", self.email)?;
+        }
+        if !self.notes.is_empty() {
+            writeln!(f, "Notes: {}", self.notes)?;
+        }
+        write!(f, "")
     }
-    if !self.desc.is_empty() {
-      writeln!(f, "Description: {}", self.desc)?;
-    }
-    if !self.user.is_empty() {
-      writeln!(f, "User name: {}", self.user)?;
-    }
-    if !self.email.is_empty() {
-      writeln!(f, "e-mail: {}", self.email)?;
-    }
-    if !self.notes.is_empty() {
-      writeln!(f, "Notes: {}", self.notes)?;
-    }
-    write!(f, "")
-  }
 }
 
 impl File {
-  pub fn try_new(pw: String) -> Result<Self> {
-    let salt: PWSalt = crypto::generate_bytes(16)
-      .try_into()
-      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+    pub fn try_new(pw: String) -> Result<Self> {
+        let salt: PWSalt = crypto::generate_bytes(16)
+            .try_into()
+            .map_err(|_| anyhow!(MSG_RAND_ERR))?;
 
-    let iv: IV = crypto::generate_bytes(IV_LEN)
-      .try_into()
-      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+        let iv: IV = crypto::generate_bytes(IV_LEN)
+            .try_into()
+            .map_err(|_| anyhow!(MSG_RAND_ERR))?;
 
-    let pw_hash = crypto::hash(vec![pw.as_bytes(), &salt[..]]);
-    let key = crypto::derive_key(pw, &salt[..]);
+        let pw_hash = crypto::hash(vec![pw.as_bytes(), &salt[..]]);
+        let key = crypto::derive_key(pw, &salt[..]);
 
-    let meta_content = Vec::<u8>::new();
-    let content = bincode::serialize(&meta_content)?;
-    let encrypted_content = crypto::encrypt(
-      content.as_slice(), &iv[..], &key[..])?;
+        let meta_content = Vec::<u8>::new();
+        let content = bincode::serialize(&meta_content)?;
+        let encrypted_content = crypto::encrypt(content.as_slice(), &iv[..], &key[..])?;
 
-    let f = File {
-      head: Head {
-        pw_hash,
-        salt
-      },
-      metadata: Metadata {
-        iv,
-        content: encrypted_content
-      },
-      entries: Vec::new()
-    };
+        let f = File {
+            head: Head { pw_hash, salt },
+            metadata: Metadata {
+                iv,
+                content: encrypted_content,
+            },
+            entries: Vec::new(),
+        };
 
-    Ok(f)
-  }
+        Ok(f)
+    }
 }
 
 pub fn encode(file: &File) -> Result<Vec<u8>> {
-  let mut file_bytes = bincode::serialize(file)?;
-  let mut bytes = get_version_bytes();
-  bytes.append(&mut get_signature_bytes());
-  bytes.append(&mut file_bytes);
+    let mut file_bytes = bincode::serialize(file)?;
+    let mut bytes = get_version_bytes();
+    bytes.append(&mut get_signature_bytes());
+    bytes.append(&mut file_bytes);
 
-  Ok(bytes)
+    Ok(bytes)
 }
 
 pub fn decode(content: &[u8]) -> Result<File> {
-  let signature = get_signature_bytes();
+    let signature = get_signature_bytes();
 
-  let file = if has_signature(content, &signature) {
-    bincode::deserialize(&content[VERSION_PARTS + signature.len()..])?
-  } else { // for compatibility
-    bincode::deserialize(content)?
-  };
+    let file = if has_signature(content, &signature) {
+        bincode::deserialize(&content[VERSION_PARTS + signature.len()..])?
+    } else {
+        // for compatibility
+        bincode::deserialize(content)?
+    };
 
-  Ok(file)
+    Ok(file)
 }
 
 pub fn get_version(file_contents: &[u8]) -> String {
-  if has_signature(file_contents, &get_signature_bytes()[..]) {
-    file_contents[..3].iter().map(|byte|
-      byte.to_string()).collect::<Vec<String>>().join(".")
-  } else {
-    format!("<= {}", LAST_NONTRACKING_VERSION)
-  }
+    if has_signature(file_contents, &get_signature_bytes()[..]) {
+        file_contents[..3]
+            .iter()
+            .map(|byte| byte.to_string())
+            .collect::<Vec<String>>()
+            .join(".")
+    } else {
+        format!("<= {}", LAST_NONTRACKING_VERSION)
+    }
 }
 
 fn get_version_bytes() -> Vec<u8> {
-  let version = env!("CARGO_PKG_VERSION");
-  version.split(VERSION_SEP).map(|v_str| v_str.parse::<u8>().unwrap()).collect()
+    let version = env!("CARGO_PKG_VERSION");
+    version
+        .split(VERSION_SEP)
+        .map(|v_str| v_str.parse::<u8>().unwrap())
+        .collect()
 }
 
 fn get_signature_bytes() -> Vec<u8> {
-  vec![253, 7, 13, 147]
+    vec![253, 7, 13, 147]
 }
 
 fn has_signature(file_contents: &[u8], signature: &[u8]) -> bool {
-  file_contents.len() > signature.len() + VERSION_PARTS &&
-    signature.iter().enumerate().fold(true, |acc, (i, &el)|
-      acc && el == file_contents[VERSION_PARTS + i])
+    file_contents.len() > signature.len() + VERSION_PARTS
+        && signature.iter().enumerate().fold(true, |acc, (i, &el)| {
+            acc && el == file_contents[VERSION_PARTS + i]
+        })
 }
 
 impl File {
-  /// Adds a new entry to the in-memory file. Arguments:
-  /// * `masterpw`: the user master password as a clear-text string
-  /// * `name`: the name of the entry
-  /// * `password`: the password to be stored for the new entry
-  pub fn add_entry(&mut self, masterpw: String, name: String, entry: OpenEntry)
-  -> Result<()> {
-    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+    /// Adds a new entry to the in-memory file. Arguments:
+    /// * `masterpw`: the user master password as a clear-text string
+    /// * `name`: the name of the entry
+    /// * `password`: the password to be stored for the new entry
+    pub fn add_entry(&mut self, masterpw: String, name: String, entry: OpenEntry) -> Result<()> {
+        let key = crypto::derive_key(masterpw, &self.head.salt[..]);
 
-    let metadata = crypto::decrypt(self.metadata.content.as_slice(),
-      &self.metadata.iv[..], &key[..])?;
+        let metadata = crypto::decrypt(
+            self.metadata.content.as_slice(),
+            &self.metadata.iv[..],
+            &key[..],
+        )?;
 
-    let mut meta_content: Vec<String> =
-      bincode::deserialize(metadata.as_slice())?;
+        let mut meta_content: Vec<String> = bincode::deserialize(metadata.as_slice())?;
 
-    if meta_content.contains(&name) {
-      bail!("Entry `{}` already exists.", name);
+        if meta_content.contains(&name) {
+            bail!("Entry `{}` already exists.", name);
+        }
+
+        let iv: IV = crypto::generate_bytes(IV_LEN)
+            .try_into()
+            .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
+        let content = bincode::serialize(&entry)?;
+
+        let encrypted_content = crypto::encrypt(content.as_slice(), &iv[..], &key[..])?;
+
+        let entry = Entry {
+            iv,
+            content: encrypted_content,
+        };
+
+        self.entries.push(entry);
+        meta_content.push(name);
+
+        let meta_content = bincode::serialize(&meta_content)?;
+
+        let iv: IV = crypto::generate_bytes(IV_LEN)
+            .try_into()
+            .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+
+        let encrypted_content = crypto::encrypt(meta_content.as_slice(), &iv[..], &key[..])?;
+
+        self.metadata.content = encrypted_content;
+        self.metadata.iv = iv;
+
+        Ok(())
     }
 
-    let iv: IV = crypto::generate_bytes(IV_LEN)
-      .try_into()
-      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+    pub fn remove_entry(&mut self, masterpw: String, name: &str) -> Result<()> {
+        let key = crypto::derive_key(masterpw, &self.head.salt[..]);
 
-    let content = bincode::serialize(&entry)?;
+        let metadata = crypto::decrypt(
+            self.metadata.content.as_slice(),
+            &self.metadata.iv[..],
+            &key[..],
+        )?;
 
-    let encrypted_content = crypto::encrypt(
-      content.as_slice(), &iv[..], &key[..])?;
+        let mut entry_names: Vec<String> = bincode::deserialize(metadata.as_slice())?;
 
-    let entry = Entry {
-      iv,
-      content: encrypted_content
-    };
+        let index = entry_names
+            .iter()
+            .enumerate()
+            .filter_map(|(i, entry_name)| if entry_name == name { Some(i) } else { None })
+            .next();
 
-    self.entries.push(entry);
-    meta_content.push(name);
+        if let Some(i) = index {
+            self.entries.remove(i);
+            entry_names.remove(i);
 
-    let meta_content = bincode::serialize(&meta_content)?;
+            let meta_content = bincode::serialize(&entry_names)?;
 
-    let iv: IV = crypto::generate_bytes(IV_LEN)
-      .try_into()
-      .map_err(|_| anyhow!(MSG_RAND_ERR))?;
+            let iv: IV = crypto::generate_bytes(IV_LEN)
+                .try_into()
+                .map_err(|_| anyhow!(MSG_RAND_ERR))?;
 
-    let encrypted_content = crypto::encrypt(
-      meta_content.as_slice(), &iv[..], &key[..])?;
+            let encrypted_content = crypto::encrypt(meta_content.as_slice(), &iv[..], &key[..])?;
 
-    self.metadata.content = encrypted_content;
-    self.metadata.iv = iv;
+            self.metadata.content = encrypted_content;
+            self.metadata.iv = iv;
+        }
 
-    Ok(())
-  }
-
-  pub fn remove_entry(&mut self, masterpw: String, name: &str) -> Result<()> {
-    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
-
-    let metadata = crypto::decrypt(self.metadata.content.as_slice(),
-      &self.metadata.iv[..], &key[..])?;
-
-    let mut entry_names: Vec<String> =
-      bincode::deserialize(metadata.as_slice())?;
-
-    let index = entry_names.iter()
-      .enumerate()
-      .filter_map(|(i, entry_name)| if entry_name == name { Some(i) } else { None })
-      .next();
-
-    if let Some(i) = index {
-      self.entries.remove(i);
-      entry_names.remove(i);
-
-      let meta_content = bincode::serialize(&entry_names)?;
-
-      let iv: IV = crypto::generate_bytes(IV_LEN)
-        .try_into()
-        .map_err(|_| anyhow!(MSG_RAND_ERR))?;
-
-      let encrypted_content = crypto::encrypt(meta_content.as_slice(),
-        &iv[..], &key[..])?;
-
-      self.metadata.content = encrypted_content;
-      self.metadata.iv = iv;
+        Ok(())
     }
 
-    Ok(())
-  }
+    pub fn get_entry(&mut self, masterpw: String, name: &str) -> Result<Option<OpenEntry>> {
+        let key = crypto::derive_key(masterpw, &self.head.salt[..]);
 
-  pub fn get_entry(&mut self, masterpw: String, name: &str)
-  -> Result<Option<OpenEntry>> {
-    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+        let metadata = crypto::decrypt(
+            self.metadata.content.as_slice(),
+            &self.metadata.iv[..],
+            &key[..],
+        )?;
 
-    let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..])?;
+        let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice())?;
 
-    let meta_content: Vec<String> = bincode::deserialize(metadata.as_slice())?;
+        for (index, meta_entry) in meta_content.iter().enumerate() {
+            if meta_entry == name {
+                let entry = &self.entries[index];
 
-    for (index, meta_entry) in meta_content.iter().enumerate() {
-      if meta_entry == name {
-        let entry = &self.entries[index];
+                let entry_bytes =
+                    crypto::decrypt(entry.content.as_slice(), &entry.iv[..], &key[..])?;
 
-        let entry_bytes = crypto::decrypt(
-          entry.content.as_slice(), &entry.iv[..], &key[..])?;
+                let open_entry: OpenEntry = bincode::deserialize(entry_bytes.as_slice())?;
 
-        let open_entry: OpenEntry =
-          bincode::deserialize(entry_bytes.as_slice())?;
-
-        return Ok(Some(open_entry));
-      }
+                return Ok(Some(open_entry));
+            }
+        }
+        Ok(None)
     }
-    Ok(None)
-  }
 
-  pub fn list(&mut self, masterpw: String) -> Result<Vec<String>> {
-    let key = crypto::derive_key(masterpw, &self.head.salt[..]);
+    pub fn list(&mut self, masterpw: String) -> Result<Vec<String>> {
+        let key = crypto::derive_key(masterpw, &self.head.salt[..]);
 
-    let metadata = crypto::decrypt(
-      self.metadata.content.as_slice(), &self.metadata.iv[..], &key[..])?;
+        let metadata = crypto::decrypt(
+            self.metadata.content.as_slice(),
+            &self.metadata.iv[..],
+            &key[..],
+        )?;
 
-    let entry_names: Vec<String> = bincode::deserialize(metadata.as_slice())?;
-    Ok(entry_names)
-  }
+        let entry_names: Vec<String> = bincode::deserialize(metadata.as_slice())?;
+        Ok(entry_names)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  fn get_file() -> File {
-    let head = Head {
-      pw_hash: [1; 32],
-      salt: [2; 16]
-    };
+    fn get_file() -> File {
+        let head = Head {
+            pw_hash: [1; 32],
+            salt: [2; 16],
+        };
 
-    let entry = Entry {
-      iv: [3; 16],
-      content: vec![1, 2, 3, 4, 5]
-    };
+        let entry = Entry {
+            iv: [3; 16],
+            content: vec![1, 2, 3, 4, 5],
+        };
 
-    let entry2 = Entry {
-      iv: [4; 16],
-      content: vec![9, 8, 7, 6, 5, 4, 3]
-    };
+        let entry2 = Entry {
+            iv: [4; 16],
+            content: vec![9, 8, 7, 6, 5, 4, 3],
+        };
 
-    File {
-      head,
-      metadata: Metadata {
-        iv: [0; 16],
-        content: Vec::new()
-      },
-      entries: vec![entry, entry2]
+        File {
+            head,
+            metadata: Metadata {
+                iv: [0; 16],
+                content: Vec::new(),
+            },
+            entries: vec![entry, entry2],
+        }
     }
-  }
 
-  #[test]
-  fn can_encode() {
-    let file = get_file();
-    encode(&file).unwrap();
-  }
+    #[test]
+    fn can_encode() {
+        let file = get_file();
+        encode(&file).unwrap();
+    }
 
-  #[test]
-  fn can_decode() {
-    let file = get_file();
-    let encoded = encode(&file).unwrap();
-    let decoded = decode(encoded.as_slice()).unwrap();
+    #[test]
+    fn can_decode() {
+        let file = get_file();
+        let encoded = encode(&file).unwrap();
+        let decoded = decode(encoded.as_slice()).unwrap();
 
-    assert_eq!(file, decoded);
-  }
+        assert_eq!(file, decoded);
+    }
 }
-
