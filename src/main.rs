@@ -1,4 +1,8 @@
-use guarakapa::{crypto, fman, fs};
+use guarakapa::{
+    codec, crypto,
+    fman::{self, File},
+    fs,
+};
 use std::env;
 
 const MSG_ENTER_PW: &str = "Enter your master password: ";
@@ -67,8 +71,8 @@ fn create_new_file() {
     if pw != confirm {
         println!("Password confirmation incorrect!");
     } else {
-        let file = fman::File::try_new(pw).expect("Error creating new file.");
-        fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
+        let file = File::try_new(pw).expect("Error creating new file.");
+        fs::save(codec::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
 
         println!(
             "Your password file was created (at {}). \
@@ -80,7 +84,7 @@ fn create_new_file() {
 
 fn add_entry(entry_name: &str) {
     let contents = fs::load().expect(MSG_LOAD_ERR);
-    let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
+    let mut file: File = codec::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
     let pw = get_input_pw(MSG_ENTER_PW);
     println!();
@@ -105,14 +109,14 @@ fn add_entry(entry_name: &str) {
     if let Err(e) = file.add_entry(pw, entry_name.to_string(), entry) {
         println!("Could not add entry. Reason: {}", e);
     } else {
-        fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
+        fs::save(codec::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
         println!("Entry '{}' added successfully.", entry_name);
     }
 }
 
 fn get_entry(entry_name: &str) {
     let contents = fs::load().expect(MSG_LOAD_ERR);
-    let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
+    let mut file: File = codec::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
     let pw = get_input_pw(MSG_ENTER_PW);
     println!();
@@ -134,7 +138,7 @@ fn get_entry(entry_name: &str) {
 
 fn remove_entry(entry_name: &str) {
     let contents = fs::load().expect(MSG_LOAD_ERR);
-    let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
+    let mut file: File = codec::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
     let pw = get_input_pw(MSG_ENTER_PW);
     println!();
@@ -151,13 +155,13 @@ fn remove_entry(entry_name: &str) {
         return;
     }
 
-    fs::save(fman::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
+    fs::save(codec::encode(&file).expect(MSG_ENCODE_ERR)).expect(MSG_SAVE_ERR);
     println!("Entry '{}' removed successfully.", entry_name);
 }
 
 fn list_entries() {
     let contents = fs::load().expect(MSG_LOAD_ERR);
-    let mut file = fman::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
+    let mut file: File = codec::decode(contents.as_slice()).expect(MSG_DECODE_ERR);
 
     let pw = get_input_pw(MSG_ENTER_PW);
     println!();
@@ -189,7 +193,7 @@ fn show_version() {
 
 fn check_file(file_path: &str) {
     let contents = fs::load_from(file_path).expect(MSG_LOAD_ERR);
-    let version = fman::get_version(&contents);
+    let version = codec::get_version(&contents);
     println!(
         "File {} created with {} version {}",
         file_path,

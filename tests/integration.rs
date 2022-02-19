@@ -28,7 +28,7 @@ fn get_dummy_entry() -> fman::OpenEntry {
 fn create_file() -> Vec<u8> {
     let pw = String::from(PASSWORD);
     let file = fman::File::try_new(pw).unwrap();
-    let file_contents = fman::encode(&file).unwrap();
+    let file_contents = codec::encode(&file).unwrap();
     let original_content = file_contents.clone();
     fs::save(file_contents).unwrap();
 
@@ -40,13 +40,13 @@ fn create_file() -> Vec<u8> {
 
 fn read_file() -> fman::File {
     let contents = fs::load().unwrap();
-    fman::decode(contents.as_slice()).unwrap()
+    codec::decode(contents.as_slice()).unwrap()
 }
 
 fn add_dummy_entry(file: &mut fman::File, pw: String, entry_name: &str) -> Vec<u8> {
     let entry = get_dummy_entry();
     file.add_entry(pw, entry_name.to_string(), entry).unwrap();
-    let file_contents = fman::encode(file).unwrap();
+    let file_contents = codec::encode(file).unwrap();
     let new_content = file_contents.clone();
     fs::save(file_contents).unwrap();
 
@@ -55,7 +55,7 @@ fn add_dummy_entry(file: &mut fman::File, pw: String, entry_name: &str) -> Vec<u
 
 fn remove_entry(file: &mut fman::File, pw: String, entry_name: &str) -> Vec<u8> {
     file.remove_entry(pw, entry_name).unwrap();
-    let file_contents = fman::encode(file).unwrap();
+    let file_contents = codec::encode(file).unwrap();
     let new_content = file_contents.clone();
     fs::save(file_contents).unwrap();
 
