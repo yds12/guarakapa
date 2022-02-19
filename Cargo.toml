@@ -1,6 +1,6 @@
 [package]
 name = "guarakapa"
-version = "0.9.10"
+version = "0.9.11"
 edition = "2021"
 description = "A password manager for the terminal"
 license-file = "LICENSE"
